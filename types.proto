@@ -1,0 +1,36 @@
+syntax = "proto3";
+
+package pairing_server;
+
+message Tournament {
+    string name = 1;
+    uint32 rounds = 2;
+    string uuid = 3;
+    string hmac = 4;
+}
+
+message TournamentPlayer {
+    string name = 1;
+    Tournament tournament = 2;
+    uint32 rating = 3;
+    string uuid = 4;
+    string hmac = 5;
+}
+
+message TournamentGame {
+    uint32 round = 1;
+    TournamentPlayer white = 2;
+    TournamentPlayer black = 3;
+    Result result = 4;
+    string uuid = 5;
+    string hmac = 6;
+
+    enum Result {
+        NONE = 0;
+        DRAW = 1;
+        WHITE_WIN = 2;
+        BLACK_WIN = 3;
+        WHITE_FORFEIT = 4;
+        BLACK_FORFEIT = 5;
+    }
+}

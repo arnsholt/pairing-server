@@ -1,0 +1,5 @@
+.d/
+*.o
+*.pb.h
+*.pb.cc
+pairing-server
