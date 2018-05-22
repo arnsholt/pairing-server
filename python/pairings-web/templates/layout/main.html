@@ -1,0 +1,22 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        {%- block head %}
+        <title>{{title | default('Pairings web')}}</title>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+        <link rel="stylesheet" href="{{url_for('static', filename='css/bootstrap.min.css')}}" />
+        {%- endblock %}
+    </head>
+    <body>
+        <div class="container">
+            <div class="pb-2 mt-4 mb-2 border-bottom">
+                <h1>{{page_title | default('Pairings web')}}</h1>
+            </div>
+            {%- block content %}
+            <p>???</p>
+            {%- endblock %}
+        </div>
+        <!-- TODO: Bootstrap JS if we need it. -->
+    </body>
+</html>
