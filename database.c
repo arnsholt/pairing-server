@@ -37,7 +37,7 @@ bool database_connect(char *dbname, char *username, char *password) {
     PREPARE("get_tournament",
             "SELECT name, rounds FROM tournament WHERE uuid = $1", 1);
     PREPARE("insert_player",
-            "INSERT INTO tournament_player(name, rating, tournament)\n"
+            "INSERT INTO tournament_player(player_name, rating, tournament)\n"
             "SELECT $1, $2, id FROM tournament WHERE uuid = $3\n"
             "RETURNING uuid", 3);
 #undef PREPARE

@@ -179,7 +179,7 @@ extern "C" {
 
     void tournament_set_uuid(Tournament *t, const char *uuid, const char *digest) {
         t->set_uuid(uuid);
-        if(!hmac) {
+        if(!digest) {
             char *h = hmac(uuid);
             t->set_hmac(h);
             free(h);
@@ -239,7 +239,7 @@ extern "C" {
 
     void player_set_uuid(TournamentPlayer *p, const char *uuid, const char *digest) {
         p->set_uuid(uuid);
-        if(!hmac) {
+        if(!digest) {
             char *h = hmac(uuid);
             p->set_hmac(h);
             free(h);
