@@ -1,0 +1,10 @@
+{% extends "layout/main.html" %}
+{% block content %}
+    {%- if write_mode %}
+    <div class="alert alert-primary">
+        You have write permission for this tournament. The URL to this page
+        is your <em>only</em> way of accessing it for writing, so don't lose
+        it!
+    </div>
+    {%- endif %}
+{%- endblock %}

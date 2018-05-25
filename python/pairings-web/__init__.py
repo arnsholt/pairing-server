@@ -27,7 +27,8 @@ def tournament_post():
 @app.route('/tournament/<uuid>/')
 @app.route('/tournament/<uuid>/<hmac>/')
 def tournament(uuid, hmac=None):
-    return "Tournament uuid %s, hmac %s" % (uuid, hmac)
+    write_mode = hmac is not None
+    return render_template('tournament.html', write_mode=write_mode)
 
 def send_request(req):
     s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
