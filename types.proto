@@ -2,28 +2,35 @@ syntax = "proto3";
 
 package pairing_server;
 
+message Hmac {
+    string algorithm = 1;
+    bytes digest = 2;
+}
+
+message Identification {
+    bytes uuid = 1;
+    Hmac hmac = 2;
+}
+
 message Tournament {
-    string name = 1;
-    uint32 rounds = 2;
-    string uuid = 3;
-    string hmac = 4;
+    Identification id = 1;
+    string name = 2;
+    uint32 rounds = 3;
 }
 
 message TournamentPlayer {
-    string name = 1;
-    Tournament tournament = 2;
-    uint32 rating = 3;
-    string uuid = 4;
-    string hmac = 5;
+    Identification id = 1;
+    string name = 2;
+    Tournament tournament = 3;
+    uint32 rating = 4;
 }
 
 message TournamentGame {
-    uint32 round = 1;
-    TournamentPlayer white = 2;
-    TournamentPlayer black = 3;
-    Result result = 4;
-    string uuid = 5;
-    string hmac = 6;
+    Identification id = 1;
+    uint32 round = 2;
+    TournamentPlayer white = 3;
+    TournamentPlayer black = 4;
+    Result result = 5;
 
     enum Result {
         NONE = 0;

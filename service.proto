@@ -1,0 +1,15 @@
+syntax = "proto3";
+
+package pairing_server;
+
+import "types.proto";
+
+service PairingServer {
+    rpc GetTournament(Identification) returns (Tournament) {}
+    rpc GetTournamentPlayers(Identification) returns (stream TournamentPlayer) {}
+    rpc GetTournamentGames(Identification) returns (stream TournamentGame) {}
+
+    rpc CreateTournament(Tournament) returns (Identification) {}
+
+    rpc SignupPlayer(TournamentPlayer) returns (Identification) {}
+}
