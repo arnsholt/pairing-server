@@ -1,20 +1,8 @@
 CFLAGS=-g
 CXXFLAGS=-g `pkg-config --cflags protobuf grpc`
-LDFLAGS=-lpq -luuid `pkg-config --libs protobuf grpc++` -lstdc++
-#LDLIBS=-lcrypto -lpq -lprotobuf -luuid -lstdc++
+LDFLAGS=-lpq `pkg-config --libs protobuf grpc++` -lstdc++
 
-#PB_O=types.pb.o requests.pb.o
-#CODE_O=main.o pairing-server.o database.o arguments.o requests.o hmac.o handlers.o
-#OBJECTS=$(CODE_O) $(PB_O)
-#SRCS=main.cpp pairing-server.c database.c arguments.c requests.cpp hmac.c handlers.c
-#
-#.PHONY: clean
-#
-#pairing-server: $(OBJECTS)
-#
-#requests.o: requests.cpp requests.pb.o
-#requests.pb.o: requests.proto types.pb.o
-
+SRCS=pairing-server.cpp database.cpp
 OBJECTS=pairing-server.o database.o service.grpc.pb.o types.pb.o
 
 pairing-server: $(OBJECTS)

@@ -4,8 +4,6 @@
 
 using namespace pairing_server;
 
-DatabaseError::DatabaseError(const char *dbmsg) : msg(dbmsg) {}
-
 Database::Database(const char *dbname, const char *user, const char *password,
             const char *host) {
     const char *keys[] = {"hostaddr", "dbname", "user", "password", NULL};
@@ -18,6 +16,7 @@ Database::Database(const char *dbname, const char *user, const char *password,
             PQfinish(db);
             db = NULL;
         }
+        throw e;
     }
 
     prepare("insert_tournament",
@@ -28,6 +27,10 @@ Database::Database(const char *dbname, const char *user, const char *password,
             "INSERT INTO tournament_player(player_name, rating, tournament)\n"
             "SELECT $1, $2, id FROM tournament WHERE uuid = $3\n"
             "RETURNING uuid", 3);
+    prepare("players",
+            "SELECT player_name, rating, p.uuid AS uuid\n"
+            "FROM tournament_player p INNER JOIN tournament t ON p.tournament = t.id\n"
+            "WHERE t.uuid = $1", 1);
 }
 
 Database::~Database() {
@@ -71,6 +74,23 @@ void Database::insertTournament(Tournament *t) {
     /* TODO: Assert that a row is returned. */
     t->mutable_id()->set_uuid(PQgetvalue(res, 0, PQfnumber(res, "uuid")));
     PQclear(res);
+}
+
+std::vector<TournamentPlayer> Database::tournamentPlayers(Identification *id) {
+    const char *values[] = {id->uuid().c_str()};
+    const int formats[] = {1};
+    const int lengths[] = {16};
+    PGresult *res = execute("players", 1, &values[0], &formats[0], &lengths[0], 1);
+    std::vector<TournamentPlayer> vec(PQntuples(res));
+    for(int i = 0; i < PQntuples(res); i++) {
+        vec[i] = TournamentPlayer();
+        vec[i].mutable_id()->set_uuid(PQgetvalue(res, i, PQfnumber(res, "uuid")));
+        vec[i].set_name(PQgetvalue(res, i, PQfnumber(res, "player_name")));
+        uint32_t netRating = *(uint32_t *) PQgetvalue(res, i, PQfnumber(res, "rating"));
+        vec[i].set_rating(ntohl(netRating));
+    }
+    PQclear(res);
+    return vec;
 }
 
 void Database::insertPlayer(TournamentPlayer *p) {

@@ -4,6 +4,7 @@
 #include <exception>
 #include <postgresql/libpq-fe.h>
 #include <string>
+#include <vector>
 
 #include "types.pb.h"
 
@@ -17,8 +18,22 @@ class Database {
         void commit();
         void rollback();
 
+        template<typename Func>
+        void transaction(Func cb) {
+            begin();
+            try {
+                cb();
+            }
+            catch(...) {
+                rollback();
+                throw;
+            }
+            commit();
+        }
+
         void getTournament(pairing_server::Tournament *t);
         void insertTournament(pairing_server::Tournament *t);
+        std::vector<pairing_server::TournamentPlayer> tournamentPlayers(pairing_server::Identification *id);
 
         void insertPlayer(pairing_server::TournamentPlayer *p);
     private:
@@ -29,9 +44,11 @@ class Database {
         void sqlDo(const char *sql);
 };
 
-class DatabaseError : std::exception {
+class DatabaseError : public std::exception {
     public:
-        DatabaseError(const char *dbmsg);
+        DatabaseError(const char *dbmsg) : msg(dbmsg) {}
+        const char *what() const noexcept { return msg.c_str(); }
+
     private:
         std::string msg;
 };
