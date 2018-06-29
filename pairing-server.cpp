@@ -1,9 +1,11 @@
+#include <exception>
 #include <grpcpp/security/server_credentials.h>
 #include <grpcpp/server.h>
 #include <grpcpp/server_builder.h>
 #include <iostream>
 #include <mutex>
 #include <openssl/hmac.h>
+#include <string>
 
 #include "database.h"
 #include "service.grpc.pb.h"
@@ -112,11 +114,50 @@ class PairingServerImpl final : public PairingServer::Service {
         }
 };
 
-int main(int argc, char **argv) {
+class ArgError : public std::exception {
+    public:
+        ArgError(const char *m) : msg(m) {}
+        ArgError(std::string m) : msg(m) {}
+        const char *what() const noexcept { return msg.c_str(); }
+    private:
+        std::string msg;
+};
+
+const char *getArg(const char **argv, int i, int argc, const char *arg) {
+    if(i >= argc) {
+        throw ArgError(std::string("Missing argument to option --") + arg + ".\n");
+    }
+    return argv[i];
+}
+
+int main(int argc, const char **argv) {
     try {
-        std::string address("0.0.0.0:1234"); // TODO: Read from args.
+        const char *dbname, *dbuser, *dbpass;
+        const char *listen = "127.0.0.1";
+        const char *port = "1234";
+        for(int i = 1; i < argc; i++) {
+            std::string arg(argv[i]);
+            if(arg == "--help" || arg == "-h") {}
+            else if(arg == "--db"     || arg == "-d") { dbname = getArg(argv, ++i, argc, "db"); }
+            else if(arg == "--dbuser" || arg == "-u") { dbuser = getArg(argv, ++i, argc, "dbuser"); }
+            else if(arg == "--dbpass" || arg == "-P") { dbpass = getArg(argv, ++i, argc, "dbpass"); }
+            else if(arg == "--listen" || arg == "-l") {
+                const char *listen = getArg(argv, ++i, argc, "listen");
+            }
+            else if(arg == "--port"   || arg == "-p") {
+                const char *port = getArg(argv, ++i, argc, "port");
+            }
+            else if(arg == "--secret" || arg == "-s") {
+                const char *secret = getArg(argv, ++i, argc, "secret");
+            }
+            else {
+                throw ArgError(std::string("Unknown option ") + arg + ".\n");
+            }
+        }
+
+        std::string address = listen + std::string(":") + port;
         const char *secret = "deadbeef"; // TODO: Read from secret file.
-        PairingServerImpl service(secret, NULL, NULL, NULL);
+        PairingServerImpl service(secret, dbname, dbuser, dbpass);
         ServerBuilder builder;
         // TODO: Optionally SSL server credentials.
         builder.AddListeningPort(address, InsecureServerCredentials());
