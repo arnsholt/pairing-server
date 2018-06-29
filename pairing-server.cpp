@@ -48,14 +48,14 @@ class PairingServerImpl final : public PairingServer::Service {
             return Status(StatusCode::INVALID_ARGUMENT, "Missing or invalid UUID in " type " identification.")
         #define COMPLETE(obj, type) if(!complete(*obj)) \
             return Status(StatusCode::INVALID_ARGUMENT, "Incomplete " type ".")
-        Status GetTournament(ServerContext *ctx, Identification *req, Tournament *resp) {
+        Status GetTournament(ServerContext *ctx, const Identification *req, Tournament *resp) override {
             IDENTIFIED(req, "tournament");
             resp->mutable_id()->set_uuid(req->uuid());
             db.getTournament(resp);
             return Status::OK;
         }
 
-        Status GetTournamentPlayers(ServerContext *ctx, Identification *req, ServerWriter<TournamentPlayer> *writer) {
+        Status GetTournamentPlayers(ServerContext *ctx, const Identification *req, ServerWriter<TournamentPlayer> *writer) override {
             IDENTIFIED(req, "tournament");
             for(TournamentPlayer &p: db.tournamentPlayers(req)) {
                 writer->Write(p);
@@ -63,7 +63,7 @@ class PairingServerImpl final : public PairingServer::Service {
             return Status::OK;
         }
 
-        Status GetTournamentGames(ServerContext *ctx, Identification *req, ServerWriter<TournamentGame> *writer) {
+        Status GetTournamentGames(ServerContext *ctx, const Identification *req, ServerWriter<TournamentGame> *writer) override {
             IDENTIFIED(req, "tournament");
             for(TournamentGame &g: db.tournamentGames(req)) {
                 writer->Write(g);
@@ -71,18 +71,16 @@ class PairingServerImpl final : public PairingServer::Service {
             return Status::OK;
         }
 
-        Status CreateTournament(ServerContext *ctx, Tournament *req, Identification *resp) {
+        Status CreateTournament(ServerContext *ctx, const Tournament *req, Identification *resp) override {
             COMPLETE(req, "tournament");
-            db.insertTournament(req);
-            resp->set_uuid(req->id().uuid());
+            *resp = db.insertTournament(req);
             sign(*resp);
             return Status::OK;
         }
 
-        Status SignupPlayer(ServerContext *ctx, TournamentPlayer *req, Identification *resp) {
+        Status SignupPlayer(ServerContext *ctx, const TournamentPlayer *req, Identification *resp) override {
             COMPLETE(req, "player");
-            db.insertPlayer(req);
-            resp->set_uuid(req->id().uuid());
+            *resp = db.insertPlayer(req);
             sign(*resp);
             return Status::OK;
         }
@@ -171,6 +169,7 @@ int main(int argc, const char **argv) {
         builder.AddListeningPort(address, InsecureServerCredentials());
         builder.RegisterService(&service);
         std::unique_ptr<Server> server(builder.BuildAndStart());
+        std::cout << "Waiting on server..." << std::endl;
         server->Wait();
     }
     catch(const std::exception &e) {

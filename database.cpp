@@ -69,29 +69,31 @@ void Database::getTournament(Tournament *t) {
     const char *values[] = {t->id().uuid().c_str()};
     const int formats[] = {1};
     const int lengths[] = {16};
-    PGresult *res = execute("get_tournament", 1, &values[0], &formats[0], &lengths[0], 1);
+    PGresult *res = execute("get_tournament", 1, &values[0], &lengths[0], &formats[0], 1);
     /* TODO: Assert that exactly one row is returned. */
     t->set_rounds(ntohl(*(uint32_t *) PQgetvalue(res, 0, PQfnumber(res, "rounds"))));
     t->set_name(PQgetvalue(res, 0, PQfnumber(res, "name")));
     PQclear(res);
 }
 
-void Database::insertTournament(Tournament *t) {
+Identification Database::insertTournament(const Tournament *t) {
     uint32_t netRounds = htonl(t->rounds());
     const char *values[] = {t->name().c_str(), (char *) &netRounds};
     const int formats[] = {0, 1};
     const int lengths[] = {0, sizeof(uint32_t)};
-    PGresult *res = execute("insert_tournament", 2, &values[0], &formats[0], &lengths[0], 1);
+    PGresult *res = execute("insert_tournament", 2, &values[0], &lengths[0], &formats[0], 1);
     /* TODO: Assert that a row is returned. */
-    t->mutable_id()->set_uuid(PQgetvalue(res, 0, PQfnumber(res, "uuid")));
+    Identification ident;
+    ident.set_uuid(PQgetvalue(res, 0, PQfnumber(res, "uuid")));
     PQclear(res);
+    return ident;
 }
 
-std::vector<TournamentPlayer> Database::tournamentPlayers(Identification *id) {
+std::vector<TournamentPlayer> Database::tournamentPlayers(const Identification *id) {
     const char *values[] = {id->uuid().c_str()};
     const int formats[] = {1};
     const int lengths[] = {16};
-    PGresult *res = execute("players", 1, &values[0], &formats[0], &lengths[0], 1);
+    PGresult *res = execute("players", 1, &values[0], &lengths[0], &formats[0], 1);
     std::vector<TournamentPlayer> vec(PQntuples(res));
     for(int i = 0; i < PQntuples(res); i++) {
         vec[i] = playerFromRow(res, i);
@@ -100,11 +102,11 @@ std::vector<TournamentPlayer> Database::tournamentPlayers(Identification *id) {
     return vec;
 }
 
-std::vector<TournamentGame> Database::tournamentGames(Identification *id) {
+std::vector<TournamentGame> Database::tournamentGames(const Identification *id) {
     const char *values[] = {id->uuid().c_str()};
     const int formats[] = {1};
     const int lengths[] = {16};
-    PGresult *res = execute("games", 1, &values[0], &formats[0], &lengths[0], 1);
+    PGresult *res = execute("games", 1, &values[0], &lengths[0], &formats[0], 1);
     std::vector<TournamentGame> vec(10);
     for(int i = 0; i < PQntuples(res); i++) {
         vec[i] = TournamentGame();
@@ -120,16 +122,18 @@ std::vector<TournamentGame> Database::tournamentGames(Identification *id) {
     return vec;
 }
 
-void Database::insertPlayer(TournamentPlayer *p) {
+Identification Database::insertPlayer(const TournamentPlayer *p) {
     uint32_t netRating = htonl(p->rating());
     const char *values[] = {p->name().c_str(), (char *) &netRating,
         p->tournament().id().uuid().c_str()};
     const int formats[] = {0, 1, 1};
     const int lengths[] = {0, sizeof(uint32_t), 16};
-    PGresult *res = execute("insert_player", 3, &values[0], &formats[0], &lengths[0], 1);
+    PGresult *res = execute("insert_player", 3, &values[0], &lengths[0], &formats[0], 1);
     /* TODO: Make sure we actually get a row back. */
-    p->mutable_id()->set_uuid(PQgetvalue(res, 0, PQfnumber(res, "uuid")));
+    Identification ident;
+    ident.set_uuid(PQgetvalue(res, 0, PQfnumber(res, "uuid")));
     PQclear(res);
+    return ident;
 }
 
 /* Private helper methods: */

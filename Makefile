@@ -1,6 +1,6 @@
 CFLAGS=-g
 CXXFLAGS=-g `pkg-config --cflags protobuf grpc`
-LDFLAGS=-lpq `pkg-config --libs protobuf grpc++` -lstdc++
+LDFLAGS=-lpq -lcrypto `pkg-config --libs protobuf grpc++` -lstdc++
 
 SRCS=pairing-server.cpp database.cpp
 OBJECTS=pairing-server.o database.o service.grpc.pb.o types.pb.o
