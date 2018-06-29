@@ -43,6 +43,9 @@ class Database {
         PGresult *execute(const char *stmt, int count, const char **values,
                 const int *lengths, const int *formats, int resultFormat);
         void sqlDo(const char *sql);
+        pairing_server::TournamentPlayer playerFromRow(PGresult *res, int i,
+                const char *name_col = "player_name", const char *rating_col = "rating",
+                const char *uuid_col = "uuid");
 };
 
 class DatabaseError : public std::exception {

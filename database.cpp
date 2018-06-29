@@ -4,6 +4,10 @@
 
 using namespace pairing_server;
 
+uint32_t intify(const char *x) {
+    return ntohl(*(uint32_t *) x);
+}
+
 Database::Database(const char *dbname, const char *user, const char *password,
             const char *host) {
     const char *keys[] = {"hostaddr", "dbname", "user", "password", NULL};
@@ -31,6 +35,13 @@ Database::Database(const char *dbname, const char *user, const char *password,
             "SELECT player_name, rating, p.uuid AS uuid\n"
             "FROM tournament_player p INNER JOIN tournament t ON p.tournament = t.id\n"
             "WHERE t.uuid = $1", 1);
+    prepare("games",
+           "SELECT w.player_name AS white_name, w.rating AS white_rating, w.uuid AS white_uuid,\n"
+           "       b.player_name AS black_name, b.rating AS black_rating, b.uuid AS black_uuid,\n"
+           "       result, round, g.uuid AS uuid\n"
+           "FROM tournament_game g INNER JOIN tournament_player w ON white = w.id\n"
+           "                       LEFT  JOIN tournament_player b ON black = b.id\n"
+           "WHERE g.uuid = $1", 1);
 }
 
 Database::~Database() {
@@ -83,18 +94,29 @@ std::vector<TournamentPlayer> Database::tournamentPlayers(Identification *id) {
     PGresult *res = execute("players", 1, &values[0], &formats[0], &lengths[0], 1);
     std::vector<TournamentPlayer> vec(PQntuples(res));
     for(int i = 0; i < PQntuples(res); i++) {
-        vec[i] = TournamentPlayer();
-        vec[i].mutable_id()->set_uuid(PQgetvalue(res, i, PQfnumber(res, "uuid")));
-        vec[i].set_name(PQgetvalue(res, i, PQfnumber(res, "player_name")));
-        uint32_t netRating = *(uint32_t *) PQgetvalue(res, i, PQfnumber(res, "rating"));
-        vec[i].set_rating(ntohl(netRating));
+        vec[i] = playerFromRow(res, i);
     }
     PQclear(res);
     return vec;
 }
 
 std::vector<TournamentGame> Database::tournamentGames(Identification *id) {
+    const char *values[] = {id->uuid().c_str()};
+    const int formats[] = {1};
+    const int lengths[] = {16};
+    PGresult *res = execute("games", 1, &values[0], &formats[0], &lengths[0], 1);
     std::vector<TournamentGame> vec(10);
+    for(int i = 0; i < PQntuples(res); i++) {
+        vec[i] = TournamentGame();
+        vec[i].mutable_id()->set_uuid(PQgetvalue(res, i, PQfnumber(res, "uuid")));
+        vec[i].set_round(intify(PQgetvalue(res, i, PQfnumber(res, "round"))));
+        if(!PQgetisnull(res, i, PQfnumber(res, "result"))) {
+            // TODO
+        }
+        *(vec[i].mutable_white()) = playerFromRow(res, i, "white_name", "white_rating", "white_uuid");
+        *(vec[i].mutable_black()) = playerFromRow(res, i, "black_name", "black_rating", "black_uuid");
+    }
+    PQclear(res);
     return vec;
 }
 
@@ -129,4 +151,12 @@ PGresult *Database::execute(const char *stmt, int count, const char **values,
         throw DatabaseError(PQerrorMessage(db));
     }
     return res;
+}
+
+TournamentPlayer Database::playerFromRow(PGresult *res, int i, const char *name_col, const char *rating_col, const char *uuid_col) {
+    TournamentPlayer p;
+    p.mutable_id()->set_uuid(PQgetvalue(res, i, PQfnumber(res, uuid_col)));
+    p.set_name(PQgetvalue(res, i, PQfnumber(res, name_col)));
+    p.set_rating(intify(PQgetvalue(res, i, PQfnumber(res, rating_col))));
+    return p;
 }
