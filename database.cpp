@@ -93,6 +93,11 @@ std::vector<TournamentPlayer> Database::tournamentPlayers(Identification *id) {
     return vec;
 }
 
+std::vector<TournamentGame> Database::tournamentGames(Identification *id) {
+    std::vector<TournamentGame> vec(10);
+    return vec;
+}
+
 void Database::insertPlayer(TournamentPlayer *p) {
     uint32_t netRating = htonl(p->rating());
     const char *values[] = {p->name().c_str(), (char *) &netRating,

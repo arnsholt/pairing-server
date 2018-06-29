@@ -34,6 +34,7 @@ class Database {
         void getTournament(pairing_server::Tournament *t);
         void insertTournament(pairing_server::Tournament *t);
         std::vector<pairing_server::TournamentPlayer> tournamentPlayers(pairing_server::Identification *id);
+        std::vector<pairing_server::TournamentGame> tournamentGames(pairing_server::Identification *id);
 
         void insertPlayer(pairing_server::TournamentPlayer *p);
     private:

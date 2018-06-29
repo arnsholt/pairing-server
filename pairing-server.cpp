@@ -63,6 +63,14 @@ class PairingServerImpl final : public PairingServer::Service {
             return Status::OK;
         }
 
+        Status GetTournamentGames(ServerContext *ctx, Identification *req, ServerWriter<TournamentGame> *writer) {
+            IDENTIFIED(req, "tournament");
+            for(TournamentGame &g: db.tournamentGames(req)) {
+                writer->Write(g);
+            }
+            return Status::OK;
+        }
+
         Status CreateTournament(ServerContext *ctx, Tournament *req, Identification *resp) {
             COMPLETE(req, "tournament");
             db.insertTournament(req);
