@@ -81,6 +81,7 @@ class PairingServerImpl final : public PairingServer::Service {
         Status PairNextRound(ServerContext *ctx, const Identification *req, ServerWriter<Game> *writer) override {
             /* This is where the magic needs to happen, and we call into
              * bbpPairings. */
+            // TODO
             return Status::OK;
         }
 
@@ -92,6 +93,7 @@ class PairingServerImpl final : public PairingServer::Service {
         }
 
         Status RegisterResult(ServerContext *ctx, const RegisterResultRequest *req, Identification *resp) override {
+            // TODO
             return Status::OK;
         }
 
