@@ -3,3 +3,5 @@
 *.pb.h
 *.pb.cc
 pairing-server
+*/venv/
+*/__pycache__/
