@@ -28,19 +28,19 @@ Database::Database(const char *dbname, const char *user, const char *password,
     prepare("get_tournament",
             "SELECT name, rounds FROM tournament WHERE uuid = $1", 1);
     prepare("insert_player",
-            "INSERT INTO tournament_player(player_name, rating, tournament)\n"
+            "INSERT INTO player(player_name, rating, tournament)\n"
             "SELECT $1, $2, id FROM tournament WHERE uuid = $3\n"
             "RETURNING uuid", 3);
     prepare("players",
             "SELECT player_name, rating, p.uuid AS uuid\n"
-            "FROM tournament_player p INNER JOIN tournament t ON p.tournament = t.id\n"
+            "FROM player p INNER JOIN tournament t ON p.tournament = t.id\n"
             "WHERE t.uuid = $1", 1);
     prepare("games",
            "SELECT w.player_name AS white_name, w.rating AS white_rating, w.uuid AS white_uuid,\n"
            "       b.player_name AS black_name, b.rating AS black_rating, b.uuid AS black_uuid,\n"
            "       result, round, g.uuid AS uuid\n"
-           "FROM tournament_game g INNER JOIN tournament_player w ON white = w.id\n"
-           "                       LEFT  JOIN tournament_player b ON black = b.id\n"
+           "FROM game g INNER JOIN player w ON white = w.id\n"
+           "            LEFT  JOIN player b ON black = b.id\n"
            "WHERE g.uuid = $1", 1);
 }
 
