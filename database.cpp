@@ -42,6 +42,8 @@ Database::Database(const char *dbname, const char *user, const char *password,
            "FROM game g INNER JOIN player w ON white = w.id\n"
            "            LEFT  JOIN player b ON black = b.id\n"
            "WHERE g.uuid = $1", 1);
+    prepare("register_result",
+            "UPDATE game SET result = $1 WHERE uuid = 2", 2);
 }
 
 Database::~Database() {
@@ -134,6 +136,14 @@ Identification Database::insertPlayer(const Player *p) {
     ident.set_uuid(PQgetvalue(res, 0, PQfnumber(res, "uuid")));
     PQclear(res);
     return ident;
+}
+
+void Database::registerResult(const Identification &gameId, Result result) {
+    uint32_t netResult = htonl(result);
+    const char *values[] = {(char *) &netResult, gameId.uuid().c_str()};
+    const int formats[] = {0, 1};
+    const int lengths[] = {0, sizeof(uint32_t)};
+    PGresult *res = execute("register_result", 2, &values[0], &lengths[0], &formats[0], 1);
 }
 
 /* Private helper methods: */

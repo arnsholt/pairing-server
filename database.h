@@ -6,6 +6,7 @@
 #include <string>
 #include <vector>
 
+#include "service.pb.h"
 #include "types.pb.h"
 
 class Database {
@@ -36,6 +37,7 @@ class Database {
         std::vector<pairing_server::Player> tournamentPlayers(const pairing_server::Identification *id);
         std::vector<pairing_server::Game> tournamentGames(const pairing_server::Identification *id);
         pairing_server::Identification insertPlayer(const pairing_server::Player *p);
+        void registerResult(const pairing_server::Identification &gameId, pairing_server::Result result);
     private:
         PGconn *db;
         void prepare(const char *name, const char *sql, int count);

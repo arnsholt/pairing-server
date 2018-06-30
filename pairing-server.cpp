@@ -44,19 +44,21 @@ class PairingServerImpl final : public PairingServer::Service {
          * - DATA_LOSS
          * - DO_NOT_USE
          */
-        #define IDENTIFIED(id, type) if(!identified(*id)) \
+        #define IDENTIFIED(id, type) if(!identified(id)) \
             return Status(StatusCode::INVALID_ARGUMENT, "Missing or invalid UUID in " type " identification.")
-        #define COMPLETE(obj, type) if(!complete(*obj)) \
+        #define AUTHENTICATED(id) ({ Status status = authenticated(id); \
+                if(status.error_code() != StatusCode::OK) return status; })
+        #define COMPLETE(obj, type) if(!complete(obj)) \
             return Status(StatusCode::INVALID_ARGUMENT, "Incomplete " type ".")
         Status GetTournament(ServerContext *ctx, const Identification *req, Tournament *resp) override {
-            IDENTIFIED(req, "tournament");
+            IDENTIFIED(*req, "tournament");
             resp->mutable_id()->set_uuid(req->uuid());
             db.getTournament(resp);
             return Status::OK;
         }
 
         Status GetPlayers(ServerContext *ctx, const Identification *req, ServerWriter<Player> *writer) override {
-            IDENTIFIED(req, "tournament");
+            IDENTIFIED(*req, "tournament");
             for(Player &p: db.tournamentPlayers(req)) {
                 writer->Write(p);
             }
@@ -64,7 +66,7 @@ class PairingServerImpl final : public PairingServer::Service {
         }
 
         Status GetGames(ServerContext *ctx, const Identification *req, ServerWriter<Game> *writer) override {
-            IDENTIFIED(req, "tournament");
+            IDENTIFIED(*req, "tournament");
             for(Game &g: db.tournamentGames(req)) {
                 writer->Write(g);
             }
@@ -72,7 +74,7 @@ class PairingServerImpl final : public PairingServer::Service {
         }
 
         Status CreateTournament(ServerContext *ctx, const Tournament *req, Identification *resp) override {
-            COMPLETE(req, "tournament");
+            COMPLETE(*req, "tournament");
             *resp = db.insertTournament(req);
             sign(*resp);
             return Status::OK;
@@ -86,14 +88,17 @@ class PairingServerImpl final : public PairingServer::Service {
         }
 
         Status SignupPlayer(ServerContext *ctx, const Player *req, Identification *resp) override {
-            COMPLETE(req, "player");
+            COMPLETE(*req, "player");
             *resp = db.insertPlayer(req);
             sign(*resp);
             return Status::OK;
         }
 
         Status RegisterResult(ServerContext *ctx, const RegisterResultRequest *req, Identification *resp) override {
-            // TODO
+            IDENTIFIED(req->gameid(), "game");
+            AUTHENTICATED(req->gameid());
+            COMPLETE(*req, "game");
+            db.registerResult(req->gameid(), req->result());
             return Status::OK;
         }
 
@@ -114,7 +119,20 @@ class PairingServerImpl final : public PairingServer::Service {
         }
 
         bool identified(const Identification &id) { return id.uuid().size() == 16; }
-        bool authenticated(const Identification &id) { return hmac(id) == id.hmac().digest(); }
+        Status authenticated(const Identification &id) {
+            if(!complete(id.hmac()))
+                return Status(StatusCode::INVALID_ARGUMENT, "Incomplete HMAC signature in identification");
+            /* Possibly a slight abuse of the error codes here, but oh well.
+             * Since we don't have users as such I've chosen to interpret
+             * passing an HMAC object as being "logged in" and passing a valid
+             * HMAC object (for the resource) as being logged in as a user
+             * with permissions to the object. */
+            if(!id.has_hmac())
+                return Status(StatusCode::UNAUTHENTICATED, "Missing HMAC signature in identification");
+            if(hmac(id) != id.hmac().digest())
+                return Status(StatusCode::PERMISSION_DENIED, "Invalid HMAC signature in identification");
+            return Status::OK;
+        }
 
         void sign(Identification &id) {
             id.mutable_hmac()->set_algorithm("sha256");
@@ -129,6 +147,14 @@ class PairingServerImpl final : public PairingServer::Service {
             return p.name().size() > 0
                 && p.rating() > 0
                 && identified(p.tournament().id());
+        }
+
+        bool complete(const Hmac &hmac) {
+            return hmac.algorithm().size() > 0 && hmac.digest().size() > 0;
+        }
+
+        bool complete(const RegisterResultRequest &req) {
+            return req.result() > 0;
         }
 };
 
