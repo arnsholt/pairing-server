@@ -18,7 +18,7 @@ message Tournament {
     uint32 rounds = 3;
 }
 
-message TournamentPlayer {
+message Player {
     Identification id = 1;
     string name = 2;
     Tournament tournament = 3;
@@ -34,10 +34,10 @@ enum Result {
     BLACK_FORFEIT = 5;
 }
 
-message TournamentGame {
+message Game {
     Identification id = 1;
     uint32 round = 2;
-    TournamentPlayer white = 3;
-    TournamentPlayer black = 4;
+    Player white = 3;
+    Player black = 4;
     Result result = 5;
 }

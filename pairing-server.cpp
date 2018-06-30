@@ -55,17 +55,17 @@ class PairingServerImpl final : public PairingServer::Service {
             return Status::OK;
         }
 
-        Status GetTournamentPlayers(ServerContext *ctx, const Identification *req, ServerWriter<TournamentPlayer> *writer) override {
+        Status GetPlayers(ServerContext *ctx, const Identification *req, ServerWriter<Player> *writer) override {
             IDENTIFIED(req, "tournament");
-            for(TournamentPlayer &p: db.tournamentPlayers(req)) {
+            for(Player &p: db.tournamentPlayers(req)) {
                 writer->Write(p);
             }
             return Status::OK;
         }
 
-        Status GetTournamentGames(ServerContext *ctx, const Identification *req, ServerWriter<TournamentGame> *writer) override {
+        Status GetGames(ServerContext *ctx, const Identification *req, ServerWriter<Game> *writer) override {
             IDENTIFIED(req, "tournament");
-            for(TournamentGame &g: db.tournamentGames(req)) {
+            for(Game &g: db.tournamentGames(req)) {
                 writer->Write(g);
             }
             return Status::OK;
@@ -78,13 +78,13 @@ class PairingServerImpl final : public PairingServer::Service {
             return Status::OK;
         }
 
-        Status PairNextRound(ServerContext *ctx, const Identification *req, ServerWriter<TournamentGame> *writer) override {
+        Status PairNextRound(ServerContext *ctx, const Identification *req, ServerWriter<Game> *writer) override {
             /* This is where the magic needs to happen, and we call into
              * bbpPairings. */
             return Status::OK;
         }
 
-        Status SignupPlayer(ServerContext *ctx, const TournamentPlayer *req, Identification *resp) override {
+        Status SignupPlayer(ServerContext *ctx, const Player *req, Identification *resp) override {
             COMPLETE(req, "player");
             *resp = db.insertPlayer(req);
             sign(*resp);
@@ -123,7 +123,7 @@ class PairingServerImpl final : public PairingServer::Service {
             return t.name().size() > 0 && t.rounds() > 0;
         }
 
-        bool complete(const TournamentPlayer &p) {
+        bool complete(const Player &p) {
             return p.name().size() > 0
                 && p.rating() > 0
                 && identified(p.tournament().id());

@@ -89,12 +89,12 @@ Identification Database::insertTournament(const Tournament *t) {
     return ident;
 }
 
-std::vector<TournamentPlayer> Database::tournamentPlayers(const Identification *id) {
+std::vector<Player> Database::tournamentPlayers(const Identification *id) {
     const char *values[] = {id->uuid().c_str()};
     const int formats[] = {1};
     const int lengths[] = {16};
     PGresult *res = execute("players", 1, &values[0], &lengths[0], &formats[0], 1);
-    std::vector<TournamentPlayer> vec(PQntuples(res));
+    std::vector<Player> vec(PQntuples(res));
     for(int i = 0; i < PQntuples(res); i++) {
         vec[i] = playerFromRow(res, i);
     }
@@ -102,14 +102,14 @@ std::vector<TournamentPlayer> Database::tournamentPlayers(const Identification *
     return vec;
 }
 
-std::vector<TournamentGame> Database::tournamentGames(const Identification *id) {
+std::vector<Game> Database::tournamentGames(const Identification *id) {
     const char *values[] = {id->uuid().c_str()};
     const int formats[] = {1};
     const int lengths[] = {16};
     PGresult *res = execute("games", 1, &values[0], &lengths[0], &formats[0], 1);
-    std::vector<TournamentGame> vec(10);
+    std::vector<Game> vec(10);
     for(int i = 0; i < PQntuples(res); i++) {
-        vec[i] = TournamentGame();
+        vec[i] = Game();
         vec[i].mutable_id()->set_uuid(PQgetvalue(res, i, PQfnumber(res, "uuid")));
         vec[i].set_round(intify(PQgetvalue(res, i, PQfnumber(res, "round"))));
         if(!PQgetisnull(res, i, PQfnumber(res, "result"))) {
@@ -122,7 +122,7 @@ std::vector<TournamentGame> Database::tournamentGames(const Identification *id) 
     return vec;
 }
 
-Identification Database::insertPlayer(const TournamentPlayer *p) {
+Identification Database::insertPlayer(const Player *p) {
     uint32_t netRating = htonl(p->rating());
     const char *values[] = {p->name().c_str(), (char *) &netRating,
         p->tournament().id().uuid().c_str()};
@@ -157,8 +157,8 @@ PGresult *Database::execute(const char *stmt, int count, const char **values,
     return res;
 }
 
-TournamentPlayer Database::playerFromRow(PGresult *res, int i, const char *name_col, const char *rating_col, const char *uuid_col) {
-    TournamentPlayer p;
+Player Database::playerFromRow(PGresult *res, int i, const char *name_col, const char *rating_col, const char *uuid_col) {
+    Player p;
     p.mutable_id()->set_uuid(PQgetvalue(res, i, PQfnumber(res, uuid_col)));
     p.set_name(PQgetvalue(res, i, PQfnumber(res, name_col)));
     p.set_rating(intify(PQgetvalue(res, i, PQfnumber(res, rating_col))));
