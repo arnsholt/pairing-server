@@ -25,19 +25,19 @@ message TournamentPlayer {
     uint32 rating = 4;
 }
 
+enum Result {
+    NONE = 0;
+    DRAW = 1;
+    WHITE_WIN = 2;
+    BLACK_WIN = 3;
+    WHITE_FORFEIT = 4;
+    BLACK_FORFEIT = 5;
+}
+
 message TournamentGame {
     Identification id = 1;
     uint32 round = 2;
     TournamentPlayer white = 3;
     TournamentPlayer black = 4;
     Result result = 5;
-
-    enum Result {
-        NONE = 0;
-        DRAW = 1;
-        WHITE_WIN = 2;
-        BLACK_WIN = 3;
-        WHITE_FORFEIT = 4;
-        BLACK_FORFEIT = 5;
-    }
 }

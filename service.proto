@@ -4,12 +4,19 @@ package pairing_server;
 
 import "types.proto";
 
+message RegisterResultRequest {
+    Identification id = 1;
+    Result result = 2;
+}
+
 service PairingServer {
     rpc GetTournament(Identification) returns (Tournament) {}
     rpc GetTournamentPlayers(Identification) returns (stream TournamentPlayer) {}
     rpc GetTournamentGames(Identification) returns (stream TournamentGame) {}
 
     rpc CreateTournament(Tournament) returns (Identification) {}
+    rpc PairNextRound(Identification) returns (stream TournamentGame) {}
 
     rpc SignupPlayer(TournamentPlayer) returns (Identification) {}
+    rpc RegisterResult(RegisterResultRequest) returns (Identification) {}
 }

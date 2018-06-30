@@ -78,10 +78,20 @@ class PairingServerImpl final : public PairingServer::Service {
             return Status::OK;
         }
 
+        Status PairNextRound(ServerContext *ctx, const Identification *req, ServerWriter<TournamentGame> *writer) override {
+            /* This is where the magic needs to happen, and we call into
+             * bbpPairings. */
+            return Status::OK;
+        }
+
         Status SignupPlayer(ServerContext *ctx, const TournamentPlayer *req, Identification *resp) override {
             COMPLETE(req, "player");
             *resp = db.insertPlayer(req);
             sign(*resp);
+            return Status::OK;
+        }
+
+        Status RegisterResult(ServerContext *ctx, const RegisterResultRequest *req, Identification *resp) override {
             return Status::OK;
         }
 
