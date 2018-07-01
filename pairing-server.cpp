@@ -82,8 +82,31 @@ class PairingServerImpl final : public PairingServer::Service {
 
         Status PairNextRound(ServerContext *ctx, const Identification *req, ServerWriter<Game> *writer) override {
             /* This is where the magic needs to happen, and we call into
-             * bbpPairings. */
-            // TODO
+             * bbpPairings. For now, to get something running to test
+             * end-to-end, we just do a dummy pairing [utting the players
+             * together in the order the DB returns them. */
+            // TODO: Compute the number of next round from DB, and signal
+            // an error if the last round of the tournament has already been
+            // played.
+            int round = -1;
+            Game g;
+            g.set_round(round);
+            bool white = true;
+            for(Player &p: db.tournamentPlayers(req)) {
+                if(white) {
+                    *(g.mutable_white()) = p;
+                }
+                else {
+                    *(g.mutable_black()) = p;
+                    writer->Write(g);
+                    g.clear_white();
+                    g.clear_black();
+                }
+                white = !white;
+            }
+            if(g.has_white()) {
+                writer->Write(g);
+            }
             return Status::OK;
         }
 
