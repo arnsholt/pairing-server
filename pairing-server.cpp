@@ -85,27 +85,45 @@ class PairingServerImpl final : public PairingServer::Service {
              * bbpPairings. For now, to get something running to test
              * end-to-end, we just do a dummy pairing [utting the players
              * together in the order the DB returns them. */
-            // TODO: Compute the number of next round from DB, and signal
-            // an error if the last round of the tournament has already been
-            // played.
-            int round = -1;
+            IDENTIFIED(*req, "tournament");
             Game g;
-            g.set_round(round);
-            bool white = true;
-            for(Player &p: db.tournamentPlayers(req)) {
-                if(white) {
-                    *(g.mutable_white()) = p;
-                }
-                else {
-                    *(g.mutable_black()) = p;
-                    writer->Write(g);
-                    g.clear_white();
-                    g.clear_black();
-                }
-                white = !white;
+            Tournament t;
+            *(t.mutable_id()) = *req;
+            db.getTournament(&t);
+            uint32_t nextRound = db.nextRound(req);
+            if(t.rounds() < nextRound) {
+                return Status(StatusCode::INVALID_ARGUMENT, "Last round paired");
             }
-            if(g.has_white()) {
-                writer->Write(g);
+
+            g.mutable_tournament()->mutable_id()->set_uuid(req->uuid());
+            g.set_round(nextRound);
+            bool white = true;
+            try {
+                db.transaction([&] {
+                    for(Player &p: db.tournamentPlayers(req)) {
+                        if(white) {
+                            *(g.mutable_white()) = p;
+                        }
+                        else {
+                            *(g.mutable_black()) = p;
+                            Identification id = db.insertGame(&g);
+                            sign(id);
+                            *(g.mutable_id()) = id;
+                            writer->Write(g);
+                            g.clear_white();
+                            g.clear_black();
+                        }
+                        white = !white;
+                    }
+                    if(g.has_white()) {
+                        Identification id = db.insertGame(&g);
+                        sign(id);
+                        *(g.mutable_id()) = id;
+                        writer->Write(g);
+                    }});
+            }
+            catch(DatabaseError &e) {
+                return Status(StatusCode::INTERNAL, "Database error", e.what());
             }
             return Status::OK;
         }

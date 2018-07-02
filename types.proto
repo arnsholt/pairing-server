@@ -36,8 +36,9 @@ enum Result {
 
 message Game {
     Identification id = 1;
-    uint32 round = 2;
-    Player white = 3;
-    Player black = 4;
-    Result result = 5;
+    Tournament tournament = 2;
+    uint32 round = 3;
+    Player white = 4;
+    Player black = 5;
+    Result result = 6;
 }

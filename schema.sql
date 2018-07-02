@@ -20,10 +20,12 @@ CREATE INDEX player_tournament_idx ON player(tournament);
 CREATE TABLE game (
     id SERIAL PRIMARY KEY,
     uuid UUID NOT NULL UNIQUE DEFAULT uuid_generate_v4(),
+    tournament INTEGER NOT NULL REFERENCES tournament(id),
     round INTEGER NOT NULL,
     white INTEGER NOT NULL REFERENCES player(id),
     /* If a player gets a bye, we create a game for them where black is NULL. */
     black INTEGER REFERENCES player(id),
     result INTEGER CHECK (result IS NULL OR result IN (1, -1, 0)));
+CREATE INDEX game_tournament_idx ON game(tournament);
 CREATE INDEX game_white_idx ON game(white);
 CREATE INDEX game_black_idx ON game(black);

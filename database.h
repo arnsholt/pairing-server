@@ -33,11 +33,16 @@ class Database {
         }
 
         void getTournament(pairing_server::Tournament *t);
-        pairing_server::Identification insertTournament(const pairing_server::Tournament *t);
+        int nextRound(const pairing_server::Identification *id);
         std::vector<pairing_server::Player> tournamentPlayers(const pairing_server::Identification *id);
         std::vector<pairing_server::Game> tournamentGames(const pairing_server::Identification *id);
+
+        pairing_server::Identification insertTournament(const pairing_server::Tournament *t);
         pairing_server::Identification insertPlayer(const pairing_server::Player *p);
+        pairing_server::Identification insertGame(const pairing_server::Game *g);
+
         void registerResult(const pairing_server::Identification &gameId, pairing_server::Result result);
+
     private:
         PGconn *db;
         void prepare(const char *name, const char *sql, int count);

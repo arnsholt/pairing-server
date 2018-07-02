@@ -23,14 +23,10 @@ Database::Database(const char *dbname, const char *user, const char *password,
         throw e;
     }
 
-    prepare("insert_tournament",
-            "INSERT INTO tournament(name, rounds) VALUES ($1, $2) RETURNING uuid", 2);
     prepare("get_tournament",
             "SELECT name, rounds FROM tournament WHERE uuid = $1", 1);
-    prepare("insert_player",
-            "INSERT INTO player(player_name, rating, tournament)\n"
-            "SELECT $1, $2, id FROM tournament WHERE uuid = $3\n"
-            "RETURNING uuid", 3);
+    prepare("next_round",
+            "SELECT MAX(round) + 1 AS round FROM game WHERE tournament = 1", 1);
     prepare("players",
             "SELECT player_name, rating, p.uuid AS uuid\n"
             "FROM player p INNER JOIN tournament t ON p.tournament = t.id\n"
@@ -42,8 +38,28 @@ Database::Database(const char *dbname, const char *user, const char *password,
            "FROM game g INNER JOIN player w ON white = w.id\n"
            "            LEFT  JOIN player b ON black = b.id\n"
            "WHERE g.uuid = $1", 1);
+
+    prepare("insert_tournament",
+            "INSERT INTO tournament(name, rounds) VALUES ($1, $2) RETURNING uuid", 2);
+    prepare("insert_player",
+            "INSERT INTO player(player_name, rating, tournament)\n"
+            "SELECT $1, $2, id FROM tournament WHERE uuid = $3\n"
+            "RETURNING uuid", 3);
+    prepare("insert_game",
+            "INSERT INTO game(tournament, white, black)\n"
+            "SELECT t.id, w.id, b.id\n"
+            "FROM tournament t, player w, player b\n"
+            "WHERE t.uuid = $1 AND w.uuid = $2 AND b.uuid = $3\n"
+            "RETURNING uuid", 3);
+    prepare("insert_game_with_result",
+            "INSERT INTO game(tournament, white, black, result)\n"
+            "SELECT t.id, w.id, b.id, $4\n"
+            "FROM tournament t, player w, player b\n"
+            "WHERE t.uuid = $1 AND w.uuid = $2 AND b.uuid = $3\n"
+            "RETURNING uuid", 3);
+
     prepare("register_result",
-            "UPDATE game SET result = $1 WHERE uuid = 2", 2);
+            "UPDATE game SET result = $1 WHERE uuid = $2", 2);
 }
 
 Database::~Database() {
@@ -78,17 +94,16 @@ void Database::getTournament(Tournament *t) {
     PQclear(res);
 }
 
-Identification Database::insertTournament(const Tournament *t) {
-    uint32_t netRounds = htonl(t->rounds());
-    const char *values[] = {t->name().c_str(), (char *) &netRounds};
-    const int formats[] = {0, 1};
-    const int lengths[] = {0, sizeof(uint32_t)};
-    PGresult *res = execute("insert_tournament", 2, &values[0], &lengths[0], &formats[0], 1);
-    /* TODO: Assert that a row is returned. */
-    Identification ident;
-    ident.set_uuid(PQgetvalue(res, 0, PQfnumber(res, "uuid")));
+int Database::nextRound(const Identification *id) {
+    const char *values[] = {id->uuid().c_str()};
+    const int formats[] = {1};
+    const int lengths[] = {16};
+    PGresult *res = execute("next_round", 1, &values[0], &lengths[0], &formats[0], 1);
+    int round = PQntuples(res) > 0?
+        intify(PQgetvalue(res, 0, PQfnumber(res, "round"))):
+        1;
     PQclear(res);
-    return ident;
+    return round;
 }
 
 std::vector<Player> Database::tournamentPlayers(const Identification *id) {
@@ -124,6 +139,19 @@ std::vector<Game> Database::tournamentGames(const Identification *id) {
     return vec;
 }
 
+Identification Database::insertTournament(const Tournament *t) {
+    uint32_t netRounds = htonl(t->rounds());
+    const char *values[] = {t->name().c_str(), (char *) &netRounds};
+    const int formats[] = {0, 1};
+    const int lengths[] = {0, sizeof(uint32_t)};
+    PGresult *res = execute("insert_tournament", 2, &values[0], &lengths[0], &formats[0], 1);
+    /* TODO: Assert that a row is returned. */
+    Identification ident;
+    ident.set_uuid(PQgetvalue(res, 0, PQfnumber(res, "uuid")));
+    PQclear(res);
+    return ident;
+}
+
 Identification Database::insertPlayer(const Player *p) {
     uint32_t netRating = htonl(p->rating());
     const char *values[] = {p->name().c_str(), (char *) &netRating,
@@ -136,6 +164,34 @@ Identification Database::insertPlayer(const Player *p) {
     ident.set_uuid(PQgetvalue(res, 0, PQfnumber(res, "uuid")));
     PQclear(res);
     return ident;
+}
+
+Identification Database::insertGame(const Game *g) {
+    PGresult *res;
+    /* Since the only difference between the two prepared statements here is
+     * an extra argument at the end of insert_game_with_result, we can
+     * allocate a single set of data for both invocations. In the case of
+     * insert_game, the last element simply won't be read.
+     */
+    const char *values[] = {g->tournament().id().uuid().c_str(),
+        g->white().id().uuid().c_str(),
+        g->black().id().uuid().c_str(),
+        0};
+    const int lengths[] = {16, 16, 16, sizeof(uint32_t)};
+    const int formats[] = {1, 1, 1, 1};
+
+    if(g->result() > 0) {
+        uint32_t netRound = htonl(g->round());
+        values[3] = (char *) &netRound;
+        res = execute("insert_game_with_result", 4, &values[0], &lengths[0], &formats[0], 1);
+    }
+    else {
+        res = execute("insert_game", 3, &values[0], &lengths[0], &formats[0], 1);
+    }
+
+    Identification id;
+    id.set_uuid(PQgetvalue(res, 0, PQfnumber(res, "uuid")));
+    return id;
 }
 
 void Database::registerResult(const Identification &gameId, Result result) {
