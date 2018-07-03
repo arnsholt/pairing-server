@@ -86,6 +86,7 @@ class PairingServerImpl final : public PairingServer::Service {
              * end-to-end, we just do a dummy pairing [utting the players
              * together in the order the DB returns them. */
             IDENTIFIED(*req, "tournament");
+            AUTHENTICATED(*req);
             Game g;
             Tournament t;
             *(t.mutable_id()) = *req;
