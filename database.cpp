@@ -130,7 +130,7 @@ std::vector<Game> Database::tournamentGames(const Identification *id) {
         vec[i].mutable_id()->set_uuid(PQgetvalue(res, i, PQfnumber(res, "uuid")));
         vec[i].set_round(intify(PQgetvalue(res, i, PQfnumber(res, "round"))));
         if(!PQgetisnull(res, i, PQfnumber(res, "result"))) {
-            // TODO
+            vec[i].set_result(static_cast<Result>(intify(PQgetvalue(res, i, PQfnumber(res, "result")))));
         }
         *(vec[i].mutable_white()) = playerFromRow(res, i, "white_name", "white_rating", "white_uuid");
         *(vec[i].mutable_black()) = playerFromRow(res, i, "black_name", "black_rating", "black_uuid");
