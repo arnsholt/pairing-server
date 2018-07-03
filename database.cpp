@@ -89,7 +89,7 @@ void Database::getTournament(Tournament *t) {
     const int lengths[] = {16};
     PGresult *res = execute("get_tournament", 1, &values[0], &lengths[0], &formats[0], 1);
     /* TODO: Assert that exactly one row is returned. */
-    t->set_rounds(ntohl(*(uint32_t *) PQgetvalue(res, 0, PQfnumber(res, "rounds"))));
+    t->set_rounds(intify(PQgetvalue(res, 0, PQfnumber(res, "rounds"))));
     t->set_name(PQgetvalue(res, 0, PQfnumber(res, "name")));
     PQclear(res);
 }
