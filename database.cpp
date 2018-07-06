@@ -26,7 +26,9 @@ Database::Database(const char *dbname, const char *user, const char *password,
     prepare("get_tournament",
             "SELECT name, rounds FROM tournament WHERE uuid = $1", 1);
     prepare("next_round",
-            "SELECT MAX(round) + 1 AS round FROM game WHERE tournament = 1", 1);
+            "SELECT MAX(round) + 1 AS round\n"
+            "FROM game INNER JOIN tournament t ON tournament = t.id\n"
+            "WHERE t.uuid = $1", 1);
     prepare("players",
             "SELECT player_name, rating, p.uuid AS uuid\n"
             "FROM player p INNER JOIN tournament t ON p.tournament = t.id\n"
@@ -46,17 +48,29 @@ Database::Database(const char *dbname, const char *user, const char *password,
             "SELECT $1, $2, id FROM tournament WHERE uuid = $3\n"
             "RETURNING uuid", 3);
     prepare("insert_game",
-            "INSERT INTO game(tournament, white, black)\n"
-            "SELECT t.id, w.id, b.id\n"
-            "FROM tournament t, player w, player b\n"
-            "WHERE t.uuid = $1 AND w.uuid = $2 AND b.uuid = $3\n"
-            "RETURNING uuid", 3);
-    prepare("insert_game_with_result",
-            "INSERT INTO game(tournament, white, black, result)\n"
+            "INSERT INTO game(tournament, white, black, round)\n"
             "SELECT t.id, w.id, b.id, $4\n"
             "FROM tournament t, player w, player b\n"
             "WHERE t.uuid = $1 AND w.uuid = $2 AND b.uuid = $3\n"
+            "RETURNING uuid", 4);
+    prepare("insert_game_without_black",
+            "INSERT INTO game(tournament, white, round)\n"
+            "SELECT t.id, w.id, $3\n"
+            "FROM tournament t, player w\n"
+            "WHERE t.uuid = $1 AND w.uuid = $2\n"
             "RETURNING uuid", 3);
+    prepare("insert_game_with_result",
+            "INSERT INTO game(tournament, white, black, round, result)\n"
+            "SELECT t.id, w.id, b.id, $4, $5\n"
+            "FROM tournament t, player w, player b\n"
+            "WHERE t.uuid = $1 AND w.uuid = $2 AND b.uuid = $3\n"
+            "RETURNING uuid", 5);
+    prepare("insert_game_with_result_without_black",
+            "INSERT INTO game(tournament, white, round, result)\n"
+            "SELECT t.id, w.id, $3, $4\n"
+            "FROM tournament t, player w\n"
+            "WHERE t.uuid = $1 AND w.uuid = $2\n"
+            "RETURNING uuid", 4);
 
     prepare("register_result",
             "UPDATE game SET result = $1 WHERE uuid = $2", 2);
@@ -99,9 +113,9 @@ int Database::nextRound(const Identification *id) {
     const int formats[] = {1};
     const int lengths[] = {16};
     PGresult *res = execute("next_round", 1, &values[0], &lengths[0], &formats[0], 1);
-    int round = PQntuples(res) > 0?
-        intify(PQgetvalue(res, 0, PQfnumber(res, "round"))):
-        1;
+    int round = PQgetisnull(res, 0, PQfnumber(res, "round"))?
+        1:
+        intify(PQgetvalue(res, 0, PQfnumber(res, "round")));
     PQclear(res);
     return round;
 }
@@ -168,29 +182,41 @@ Identification Database::insertPlayer(const Player *p) {
 
 Identification Database::insertGame(const Game *g) {
     PGresult *res;
-    /* Since the only difference between the two prepared statements here is
-     * an extra argument at the end of insert_game_with_result, we can
-     * allocate a single set of data for both invocations. In the case of
-     * insert_game, the last element simply won't be read.
-     */
     const char *values[] = {g->tournament().id().uuid().c_str(),
         g->white().id().uuid().c_str(),
-        g->black().id().uuid().c_str(),
-        0};
-    const int lengths[] = {16, 16, 16, sizeof(uint32_t)};
-    const int formats[] = {1, 1, 1, 1};
+        NULL,
+        NULL,
+        NULL};
+    int lengths[] = {16, 16, 0, 0, 0};
+    int formats[] = {1, 1, 1, 1, 1};
+    int params = 2;
 
+    if(g->has_black()) {
+        values[params] = g->black().id().uuid().c_str();
+        lengths[params] = 16;
+        params++;
+    }
+
+    uint32_t netRound = htonl(g->round());
+    values[params] = (char *) &netRound;
+    lengths[params++] = sizeof(uint32_t);
+
+    uint32_t netResult; // Declared here so that it has same scope as the function.
     if(g->result() > 0) {
-        uint32_t netRound = htonl(g->round());
-        values[3] = (char *) &netRound;
-        res = execute("insert_game_with_result", 4, &values[0], &lengths[0], &formats[0], 1);
+        netResult = htonl(g->result());
+        values[params] = (char *) &netResult;
+        lengths[params++] = sizeof(uint32_t);
     }
-    else {
-        res = execute("insert_game", 3, &values[0], &lengths[0], &formats[0], 1);
-    }
+
+    const char *query = g->result() > 0 && g->has_black()? "insert_game_with_result":
+                        g->result() > 0? "insert_game_with_result_without_black":
+                        g->has_black()? "insert_game":
+                                        "insert_game_without_black";
+    res = execute(query, params, &values[0], &lengths[0], &formats[0], 1);
 
     Identification id;
     id.set_uuid(PQgetvalue(res, 0, PQfnumber(res, "uuid")));
+    PQclear(res);
     return id;
 }
 

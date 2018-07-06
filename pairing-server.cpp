@@ -50,6 +50,10 @@ class PairingServerImpl final : public PairingServer::Service {
                 if(status.error_code() != StatusCode::OK) return status; })
         #define COMPLETE(obj, type) if(!complete(obj)) \
             return Status(StatusCode::INVALID_ARGUMENT, "Incomplete " type ".")
+        #define HANDLER_PROLOGUE try {
+        #define HANDLER_EPILOGUE } \
+                                 catch(DatabaseError e) { return Status(StatusCode::INTERNAL, "Database error", e.what()); } \
+                                 catch(std::exception e) { return Status(StatusCode::INTERNAL, "Other error", e.what()); }
         Status GetTournament(ServerContext *ctx, const Identification *req, Tournament *resp) override {
             IDENTIFIED(*req, "tournament");
             resp->mutable_id()->set_uuid(req->uuid());
@@ -85,6 +89,7 @@ class PairingServerImpl final : public PairingServer::Service {
              * bbpPairings. For now, to get something running to test
              * end-to-end, we just do a dummy pairing [utting the players
              * together in the order the DB returns them. */
+            HANDLER_PROLOGUE
             IDENTIFIED(*req, "tournament");
             AUTHENTICATED(*req);
             Game g;
@@ -127,6 +132,7 @@ class PairingServerImpl final : public PairingServer::Service {
                 return Status(StatusCode::INTERNAL, "Database error", e.what());
             }
             return Status::OK;
+            HANDLER_EPILOGUE
         }
 
         Status SignupPlayer(ServerContext *ctx, const Player *req, Identification *resp) override {
