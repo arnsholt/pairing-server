@@ -226,6 +226,7 @@ void Database::registerResult(const Identification &gameId, Result result) {
     const int formats[] = {0, 1};
     const int lengths[] = {0, sizeof(uint32_t)};
     PGresult *res = execute("register_result", 2, &values[0], &lengths[0], &formats[0], 1);
+    PQclear(res);
 }
 
 /* Private helper methods: */
@@ -235,6 +236,7 @@ void Database::prepare(const char *name, const char *sql, int count) {
         if(res) PQclear(res);
         throw DatabaseError(PQerrorMessage(db));
     }
+    PQclear(res);
 }
 
 PGresult *Database::execute(const char *stmt, int count, const char **values,
