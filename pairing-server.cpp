@@ -64,8 +64,9 @@ class PairingServerImpl final : public PairingServer::Service {
             HANDLER_PROLOGUE
             IDENTIFIED(*req, "tournament");
             resp->mutable_id()->set_uuid(req->uuid());
-            db.getTournament(resp);
-            return Status::OK;
+            return db.getTournament(resp)?
+                Status::OK:
+                Status(StatusCode::NOT_FOUND, "No such tournament");
             HANDLER_EPILOGUE
         }
 

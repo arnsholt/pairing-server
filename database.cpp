@@ -97,22 +97,28 @@ void Database::begin() { sqlDo("BEGIN"); }
 void Database::commit() { sqlDo("COMMIT"); }
 void Database::rollback() { sqlDo("ROLLBACK"); }
 
-void Database::getTournament(Tournament *t) {
+bool Database::getTournament(Tournament *t) {
     const char *values[] = {t->id().uuid().c_str()};
     const int formats[] = {1};
     const int lengths[] = {16};
-    PGresult *res = execute("get_tournament", 1, &values[0], &lengths[0], &formats[0], 1);
-    /* TODO: Assert that exactly one row is returned. */
-    t->set_rounds(intify(PQgetvalue(res, 0, PQfnumber(res, "rounds"))));
-    t->set_name(PQgetvalue(res, 0, PQfnumber(res, "name")));
+    bool found = false;
+    PGresult *res = execute("get_tournament", 1, &values[0], &lengths[0], &formats[0], 1, 0, 1);
+
+    if(PQntuples(res) > 0) {
+        found = true;
+        t->set_rounds(intify(PQgetvalue(res, 0, PQfnumber(res, "rounds"))));
+        t->set_name(PQgetvalue(res, 0, PQfnumber(res, "name")));
+    }
+
     PQclear(res);
+    return found;
 }
 
 int Database::nextRound(const Identification *id) {
     const char *values[] = {id->uuid().c_str()};
     const int formats[] = {1};
     const int lengths[] = {16};
-    PGresult *res = execute("next_round", 1, &values[0], &lengths[0], &formats[0], 1);
+    PGresult *res = execute("next_round", 1, &values[0], &lengths[0], &formats[0], 1, 1, 1);
     int round = PQgetisnull(res, 0, PQfnumber(res, "round"))?
         1:
         intify(PQgetvalue(res, 0, PQfnumber(res, "round")));
@@ -158,7 +164,7 @@ Identification Database::insertTournament(const Tournament *t) {
     const char *values[] = {t->name().c_str(), (char *) &netRounds};
     const int formats[] = {0, 1};
     const int lengths[] = {0, sizeof(uint32_t)};
-    PGresult *res = execute("insert_tournament", 2, &values[0], &lengths[0], &formats[0], 1);
+    PGresult *res = execute("insert_tournament", 2, &values[0], &lengths[0], &formats[0], 1, 1, 1);
     /* TODO: Assert that a row is returned. */
     Identification ident;
     ident.set_uuid(PQgetvalue(res, 0, PQfnumber(res, "uuid")), 16);
@@ -172,7 +178,7 @@ Identification Database::insertPlayer(const Player *p) {
         p->tournament().id().uuid().c_str()};
     const int formats[] = {0, 1, 1};
     const int lengths[] = {0, sizeof(uint32_t), 16};
-    PGresult *res = execute("insert_player", 3, &values[0], &lengths[0], &formats[0], 1);
+    PGresult *res = execute("insert_player", 3, &values[0], &lengths[0], &formats[0], 1, 1, 1);
     /* TODO: Make sure we actually get a row back. */
     Identification ident;
     ident.set_uuid(PQgetvalue(res, 0, PQfnumber(res, "uuid")), 16);
@@ -212,7 +218,7 @@ Identification Database::insertGame(const Game *g) {
                         g->result() > 0? "insert_game_with_result_without_black":
                         g->has_black()? "insert_game":
                                         "insert_game_without_black";
-    res = execute(query, params, &values[0], &lengths[0], &formats[0], 1);
+    res = execute(query, params, &values[0], &lengths[0], &formats[0], 1, 1, 1);
 
     Identification id;
     id.set_uuid(PQgetvalue(res, 0, PQfnumber(res, "uuid")), 16);
@@ -225,7 +231,7 @@ void Database::registerResult(const Identification &gameId, Result result) {
     const char *values[] = {(char *) &netResult, gameId.uuid().c_str()};
     const int formats[] = {0, 1};
     const int lengths[] = {0, sizeof(uint32_t)};
-    PGresult *res = execute("register_result", 2, &values[0], &lengths[0], &formats[0], 1);
+    PGresult *res = execute("register_result", 2, &values[0], &lengths[0], &formats[0], 1, 1, 1);
     PQclear(res);
 }
 
@@ -240,13 +246,25 @@ void Database::prepare(const char *name, const char *sql, int count) {
 }
 
 PGresult *Database::execute(const char *stmt, int count, const char **values,
-        const int *lengths, const int *formats, int resultFormat) {
+        const int *lengths, const int *formats, int resultFormat,
+        int minRows, int maxRows) {
     PGresult *res = PQexecPrepared(db, stmt, count, values, lengths, formats,
             resultFormat);
     if(!res || (PQresultStatus(res) != PGRES_COMMAND_OK &&
                 PQresultStatus(res) != PGRES_TUPLES_OK)) {
         if(res) PQclear(res);
         throw DatabaseError(PQerrorMessage(db));
+    }
+    int tuples = PQntuples(res);
+    if(tuples < minRows) {
+        char msgbuf[100];
+        snprintf(&msgbuf[0], 100, "Got %d rows, which is less than %d.", tuples, minRows);
+        throw DatabaseError(msgbuf);
+    }
+    if(maxRows > 0 && tuples > maxRows) {
+        char msgbuf[100];
+        snprintf(&msgbuf[0], 100, "Got %d rows, which is more than %d.", tuples, maxRows);
+        throw DatabaseError(msgbuf);
     }
     return res;
 }
