@@ -61,33 +61,41 @@ class PairingServerImpl final : public PairingServer::Service {
                                      return Status(StatusCode::INTERNAL, "Other error", e.what()); \
                                  }
         Status GetTournament(ServerContext *ctx, const Identification *req, Tournament *resp) override {
+            HANDLER_PROLOGUE
             IDENTIFIED(*req, "tournament");
             resp->mutable_id()->set_uuid(req->uuid());
             db.getTournament(resp);
             return Status::OK;
+            HANDLER_EPILOGUE
         }
 
         Status GetPlayers(ServerContext *ctx, const Identification *req, ServerWriter<Player> *writer) override {
+            HANDLER_PROLOGUE
             IDENTIFIED(*req, "tournament");
             for(Player &p: db.tournamentPlayers(req)) {
                 writer->Write(p);
             }
             return Status::OK;
+            HANDLER_EPILOGUE
         }
 
         Status GetGames(ServerContext *ctx, const Identification *req, ServerWriter<Game> *writer) override {
+            HANDLER_PROLOGUE
             IDENTIFIED(*req, "tournament");
             for(Game &g: db.tournamentGames(req)) {
                 writer->Write(g);
             }
             return Status::OK;
+            HANDLER_EPILOGUE
         }
 
         Status CreateTournament(ServerContext *ctx, const Tournament *req, Identification *resp) override {
+            HANDLER_PROLOGUE
             COMPLETE(*req, "tournament");
             *resp = db.insertTournament(req);
             sign(*resp);
             return Status::OK;
+            HANDLER_EPILOGUE
         }
 
         Status PairNextRound(ServerContext *ctx, const Identification *req, ServerWriter<Game> *writer) override {
@@ -142,18 +150,22 @@ class PairingServerImpl final : public PairingServer::Service {
         }
 
         Status SignupPlayer(ServerContext *ctx, const Player *req, Identification *resp) override {
+            HANDLER_PROLOGUE
             COMPLETE(*req, "player");
             *resp = db.insertPlayer(req);
             sign(*resp);
             return Status::OK;
+            HANDLER_EPILOGUE
         }
 
         Status RegisterResult(ServerContext *ctx, const RegisterResultRequest *req, Identification *resp) override {
+            HANDLER_PROLOGUE
             IDENTIFIED(req->gameid(), "game");
             AUTHENTICATED(req->gameid());
             COMPLETE(*req, "game");
             db.registerResult(req->gameid(), req->result());
             return Status::OK;
+            HANDLER_EPILOGUE
         }
 
     private:
