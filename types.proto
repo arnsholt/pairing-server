@@ -30,8 +30,8 @@ enum Result {
     DRAW = 1;
     WHITE_WIN = 2;
     BLACK_WIN = 3;
-    WHITE_FORFEIT = 4;
-    BLACK_FORFEIT = 5;
+    WHITE_FORFEIT_WIN = 4;
+    BLACK_FORFEIT_WIN = 5;
 }
 
 message Game {
