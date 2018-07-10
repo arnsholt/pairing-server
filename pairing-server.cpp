@@ -172,7 +172,12 @@ class PairingServerImpl final : public PairingServer::Service {
             return std::string(&buf[0], len);
         }
 
-        bool identified(const Identification &id) { return id.uuid().size() == 16; }
+        bool identified(const Identification &id) {
+            if(id.uuid().size() > 0 && id.uuid().size() != 16)
+                throw std::runtime_error("Non-zero UUID length isn't 16");
+            return id.uuid().size() == 16;
+        }
+
         Status authenticated(const Identification &id) {
             if(!complete(id.hmac()))
                 return Status(StatusCode::INVALID_ARGUMENT, "Incomplete HMAC signature in identification");
