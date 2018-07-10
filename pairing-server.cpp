@@ -168,7 +168,7 @@ class PairingServerImpl final : public PairingServer::Service {
                     secret.size(), (const unsigned char *) id.uuid().c_str(),
                     16, (unsigned char *) &buf[0], &len);
             // TODO: Better exception.
-            if(!ret) throw nullptr;
+            if(!ret) throw std::runtime_error("HMAC returned NULL");
             return std::string(&buf[0], len);
         }
 
