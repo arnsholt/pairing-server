@@ -1,5 +1,4 @@
-CFLAGS=-g
-CXXFLAGS=-g `pkg-config --cflags protobuf grpc`
+CXXFLAGS=-g -Wall `pkg-config --cflags protobuf grpc`
 LDFLAGS=-lpq -lcrypto `pkg-config --libs protobuf grpc++` -lstdc++
 
 SRCS=pairing-server.cpp database.cpp

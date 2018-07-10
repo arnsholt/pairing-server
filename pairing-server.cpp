@@ -257,13 +257,13 @@ int main(int argc, const char **argv) {
             else if(arg == "--dbuser" || arg == "-u") { dbuser = getArg(argv, ++i, argc, "dbuser"); }
             else if(arg == "--dbpass" || arg == "-P") { dbpass = getArg(argv, ++i, argc, "dbpass"); }
             else if(arg == "--listen" || arg == "-l") {
-                const char *listen = getArg(argv, ++i, argc, "listen");
+                listen = getArg(argv, ++i, argc, "listen");
             }
             else if(arg == "--port"   || arg == "-p") {
-                const char *port = getArg(argv, ++i, argc, "port");
+                port = getArg(argv, ++i, argc, "port");
             }
             else if(arg == "--secret" || arg == "-s") {
-                const char *secret = getArg(argv, ++i, argc, "secret");
+                const char *secretFile = getArg(argv, ++i, argc, "secret");
             }
             else {
                 throw ArgError(std::string("Unknown option ") + arg + ".\n");
