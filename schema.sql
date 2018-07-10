@@ -14,6 +14,8 @@ CREATE TABLE player (
     tournament INTEGER NOT NULL REFERENCES tournament(id),
     player_name TEXT NOT NULL,
     rating INTEGER NOT NULL CHECK (rating > 0),
+    withdrawn BOOLEAN NOT NULL DEFAULT false,
+    expelled BOOLEAN NOT NULL DEFAULT false,
     UNIQUE (tournament, player_name));
 CREATE INDEX player_tournament_idx ON player(tournament);
 

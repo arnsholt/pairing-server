@@ -9,6 +9,19 @@ message RegisterResultRequest {
     Result result = 2;
 }
 
+message ChangeResultRequest {
+    Identification tournamentId = 1;
+    Identification gameId = 2;
+    Result newResult = 3;
+}
+
+message ExpulsionRequest {
+    Identification tournamentId = 1;
+    Identification playerId = 2;
+}
+
+message Nothing {}
+
 service PairingServer {
     rpc GetTournament(Identification) returns (Tournament) {}
     rpc GetPlayers(Identification) returns (stream Player) {}
@@ -18,5 +31,12 @@ service PairingServer {
     rpc PairNextRound(Identification) returns (stream Game) {}
 
     rpc SignupPlayer(Player) returns (Identification) {}
-    rpc RegisterResult(RegisterResultRequest) returns (Identification) {}
+    rpc RegisterResult(RegisterResultRequest) returns (Nothing) {}
+    rpc ChangeResult(ChangeResultRequest) returns (Nothing) {}
+
+    rpc Withdraw(Identification) returns (Nothing) {}
+    rpc Reenter(Identification) returns (Nothing) {}
+
+    rpc Expel(ExpulsionRequest) returns (Nothing) {}
+    rpc Readmit(ExpulsionRequest) returns (Nothing) {}
 }

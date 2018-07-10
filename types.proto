@@ -23,6 +23,8 @@ message Player {
     string name = 2;
     Tournament tournament = 3;
     uint32 rating = 4;
+    bool withdrawn = 5;
+    bool expelled = 6;
 }
 
 enum Result {

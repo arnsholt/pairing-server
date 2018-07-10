@@ -166,7 +166,7 @@ class PairingServerImpl final : public PairingServer::Service {
             HANDLER_EPILOGUE
         }
 
-        Status RegisterResult(ServerContext *ctx, const RegisterResultRequest *req, Identification *resp) override {
+        Status RegisterResult(ServerContext *ctx, const RegisterResultRequest *req, Nothing *resp) override {
             HANDLER_PROLOGUE
             IDENTIFIED(req->gameid(), "game");
             AUTHENTICATED(req->gameid());
