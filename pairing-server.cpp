@@ -153,6 +153,13 @@ class PairingServerImpl final : public PairingServer::Service {
         Status SignupPlayer(ServerContext *ctx, const Player *req, Identification *resp) override {
             HANDLER_PROLOGUE
             COMPLETE(*req, "player");
+            /* TODO: Some additional care needs to be taken in the case of
+             * late (that is, after the first round has been paired)
+             * registrations. In particular, we may want to register unplayed
+             * games for late registrations to simplify the pairing logic, and
+             * we may also want to require admin privileges to the tournament
+             * for late registrations.
+             */
             *resp = db.insertPlayer(req);
             sign(*resp);
             return Status::OK;
@@ -164,6 +171,11 @@ class PairingServerImpl final : public PairingServer::Service {
             IDENTIFIED(req->gameid(), "game");
             AUTHENTICATED(req->gameid());
             COMPLETE(*req, "game");
+            /* TODO: We need to only allow this operation on games where no
+             * result has been registered already. Changing a result already
+             * registered is semantically different and should go through a
+             * different operation (with different access restrictions).
+             */
             db.registerResult(req->gameid(), req->result());
             return Status::OK;
             HANDLER_EPILOGUE
