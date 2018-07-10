@@ -52,8 +52,14 @@ class PairingServerImpl final : public PairingServer::Service {
             return Status(StatusCode::INVALID_ARGUMENT, "Incomplete " type ".")
         #define HANDLER_PROLOGUE try {
         #define HANDLER_EPILOGUE } \
-                                 catch(DatabaseError e) { return Status(StatusCode::INTERNAL, "Database error", e.what()); } \
-                                 catch(std::exception e) { return Status(StatusCode::INTERNAL, "Other error", e.what()); }
+                                 catch(DatabaseError e) { \
+                                     std::cerr << "Got DB exception (" << __FILE__ << ":" << __LINE__ << "): " << e.what(); \
+                                     return Status(StatusCode::INTERNAL, "Database error", e.what()); \
+                                 } \
+                                 catch(std::exception e) { \
+                                     std::cerr << "Got other exception (" << __FILE__ << ":" << __LINE__ << "): " << e.what(); \
+                                     return Status(StatusCode::INTERNAL, "Other error", e.what()); \
+                                 }
         Status GetTournament(ServerContext *ctx, const Identification *req, Tournament *resp) override {
             IDENTIFIED(*req, "tournament");
             resp->mutable_id()->set_uuid(req->uuid());
