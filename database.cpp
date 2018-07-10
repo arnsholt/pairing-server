@@ -141,7 +141,7 @@ std::vector<Game> Database::tournamentGames(const Identification *id) {
     std::vector<Game> vec(10);
     for(int i = 0; i < PQntuples(res); i++) {
         vec[i] = Game();
-        vec[i].mutable_id()->set_uuid(PQgetvalue(res, i, PQfnumber(res, "uuid")));
+        vec[i].mutable_id()->set_uuid(PQgetvalue(res, i, PQfnumber(res, "uuid")), 16);
         vec[i].set_round(intify(PQgetvalue(res, i, PQfnumber(res, "round"))));
         if(!PQgetisnull(res, i, PQfnumber(res, "result"))) {
             vec[i].set_result(static_cast<Result>(intify(PQgetvalue(res, i, PQfnumber(res, "result")))));
@@ -161,7 +161,7 @@ Identification Database::insertTournament(const Tournament *t) {
     PGresult *res = execute("insert_tournament", 2, &values[0], &lengths[0], &formats[0], 1);
     /* TODO: Assert that a row is returned. */
     Identification ident;
-    ident.set_uuid(PQgetvalue(res, 0, PQfnumber(res, "uuid")));
+    ident.set_uuid(PQgetvalue(res, 0, PQfnumber(res, "uuid")), 16);
     PQclear(res);
     return ident;
 }
@@ -175,7 +175,7 @@ Identification Database::insertPlayer(const Player *p) {
     PGresult *res = execute("insert_player", 3, &values[0], &lengths[0], &formats[0], 1);
     /* TODO: Make sure we actually get a row back. */
     Identification ident;
-    ident.set_uuid(PQgetvalue(res, 0, PQfnumber(res, "uuid")));
+    ident.set_uuid(PQgetvalue(res, 0, PQfnumber(res, "uuid")), 16);
     PQclear(res);
     return ident;
 }
@@ -215,7 +215,7 @@ Identification Database::insertGame(const Game *g) {
     res = execute(query, params, &values[0], &lengths[0], &formats[0], 1);
 
     Identification id;
-    id.set_uuid(PQgetvalue(res, 0, PQfnumber(res, "uuid")));
+    id.set_uuid(PQgetvalue(res, 0, PQfnumber(res, "uuid")), 16);
     PQclear(res);
     return id;
 }
@@ -253,7 +253,7 @@ PGresult *Database::execute(const char *stmt, int count, const char **values,
 
 Player Database::playerFromRow(PGresult *res, int i, const char *name_col, const char *rating_col, const char *uuid_col) {
     Player p;
-    p.mutable_id()->set_uuid(PQgetvalue(res, i, PQfnumber(res, uuid_col)));
+    p.mutable_id()->set_uuid(PQgetvalue(res, i, PQfnumber(res, uuid_col)), 16);
     p.set_name(PQgetvalue(res, i, PQfnumber(res, name_col)));
     p.set_rating(intify(PQgetvalue(res, i, PQfnumber(res, rating_col))));
     return p;
