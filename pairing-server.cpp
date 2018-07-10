@@ -74,6 +74,11 @@ class PairingServerImpl final : public PairingServer::Service {
             HANDLER_PROLOGUE
             IDENTIFIED(*req, "tournament");
             for(Player &p: db.tournamentPlayers(req)) {
+                /* TODO: If the request is correctly signed, also sign the
+                 * player objects returned, since someone with write access to
+                 * the tournament transitively should have write access to
+                 * player entries.
+                 */
                 writer->Write(p);
             }
             return Status::OK;
@@ -84,6 +89,11 @@ class PairingServerImpl final : public PairingServer::Service {
             HANDLER_PROLOGUE
             IDENTIFIED(*req, "tournament");
             for(Game &g: db.tournamentGames(req)) {
+                /* TODO: If the request is correctly signed, also sign the
+                 * game objects returned, since someone with write access to
+                 * the tournament transitively should have write access to
+                 * games.
+                 */
                 writer->Write(g);
             }
             return Status::OK;
