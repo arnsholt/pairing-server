@@ -144,7 +144,7 @@ std::vector<Game> Database::tournamentGames(const Identification *id) {
     const int formats[] = {1};
     const int lengths[] = {16};
     PGresult *res = execute("games", 1, &values[0], &lengths[0], &formats[0], 1);
-    std::vector<Game> vec(10);
+    std::vector<Game> vec(PQntuples(res));
     for(int i = 0; i < PQntuples(res); i++) {
         vec[i] = Game();
         vec[i].mutable_id()->set_uuid(PQgetvalue(res, i, PQfnumber(res, "uuid")), 16);
