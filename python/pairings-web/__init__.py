@@ -1,7 +1,7 @@
 from flask import Flask, redirect, render_template, request, url_for
 import grpc
 
-from .types_pb2 import Tournament, Player, Game
+from .types_pb2 import Tournament, Player, Game, Identification
 from .service_pb2_grpc import PairingServerStub
 
 app = Flask(__name__)
@@ -30,5 +30,18 @@ def tournament_post():
 @app.route('/tournament/<uuid>/')
 @app.route('/tournament/<uuid>/<hmac>/')
 def tournament(uuid, hmac=None):
-    write_mode = hmac is not None
-    return render_template('tournament.html', write_mode=write_mode)
+    ident = Identification()
+    ident.uuid = bytes.fromhex(uuid)
+    tournament = stub.GetTournament(ident)
+    if hmac is not None:
+        tournament.id.hmac.algorithm = "sha256"
+        tournament.id.hmac.digest = bytes.fromhex(hmac)
+    games = [g for g in stub.GetGames(ident)]
+    players = [p for p in stub.GetPlayers(ident)]
+
+    players.sort(key=lambda p: p.rating, reverse=True)
+    # TODO: Group games into rounds, and figure out a good way to sort the
+    # games in a round.
+
+    return render_template('tournament.html', tournament=tournament,
+            games=games, players=players)
