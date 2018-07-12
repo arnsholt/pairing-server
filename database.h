@@ -11,9 +11,12 @@
 
 class Database {
     public:
+        Database();
         Database(const char *dbname, const char *user, const char *password,
                 const char *host = "127.0.0.1");
         ~Database();
+
+        void connect();
 
         void begin();
         void commit();
@@ -44,7 +47,11 @@ class Database {
         void registerResult(const pairing_server::Identification &gameId, pairing_server::Result result);
 
     private:
-        PGconn *db;
+        const char *dbname = NULL;
+        const char *user = NULL;
+        const char *password = NULL;
+        const char *host = NULL;
+        PGconn *db = NULL;
         void prepare(const char *name, const char *sql, int count);
         PGresult *execute(const char *stmt, int count, const char **values,
                 const int *lengths, const int *formats, int resultFormat,

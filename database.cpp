@@ -8,8 +8,12 @@ uint32_t intify(const char *x) {
     return ntohl(*(uint32_t *) x);
 }
 
-Database::Database(const char *dbname, const char *user, const char *password,
-            const char *host) {
+Database::Database() {}
+
+Database::Database(const char *dbname, const char *user, const char *password, const char *host) :
+    dbname(dbname), user(user), password(password), host(host) {}
+
+void Database::connect() {
     const char *keys[] = {"hostaddr", "dbname", "user", "password", NULL};
     const char *values[] = {host, dbname, user, password, NULL};
     db = PQconnectdbParams(&keys[0], &values[0], 0);

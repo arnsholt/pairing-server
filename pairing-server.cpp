@@ -13,11 +13,23 @@
 using namespace grpc;
 using namespace pairing_server;
 
+static const char *dbname;
+static const char *dbuser;
+static const char *dbpass;
+static thread_local Database _db;
+static thread_local bool _db_done = false;
+static Database &db() {
+    if(!_db_done) {
+        _db = Database(dbname, dbuser, dbpass);
+        _db.connect();
+        _db_done = true;
+    }
+    return _db;
+}
+
 class PairingServerImpl final : public PairingServer::Service {
     public:
-        explicit PairingServerImpl(const char *secret, const char *dbname,
-                const char *dbuser, const char *dbpass) : secret(std::string(secret)),
-                db(Database(dbname, dbuser, dbpass)) {}
+        explicit PairingServerImpl(const char *secret) : secret(std::string(secret)) {}
 
         /* Generalized status creation:
          * Status(StatusCode code)
@@ -57,14 +69,14 @@ class PairingServerImpl final : public PairingServer::Service {
                                      return Status(StatusCode::INTERNAL, "Database error", e.what()); \
                                  } \
                                  catch(std::exception e) { \
-                                     std::cerr << "Got other exception (" << __FILE__ << ":" << __LINE__ << "): " << e.what(); \
+                                     std::cerr << "Got other exception (" << __FILE__ << ":" << __LINE__ << "): " << e.what() << std::endl; \
                                      return Status(StatusCode::INTERNAL, "Other error", e.what()); \
                                  }
         Status GetTournament(ServerContext *ctx, const Identification *req, Tournament *resp) override {
             HANDLER_PROLOGUE
             IDENTIFIED(*req, "tournament");
             resp->mutable_id()->set_uuid(req->uuid());
-            return db.getTournament(resp)?
+            return db().getTournament(resp)?
                 Status::OK:
                 Status(StatusCode::NOT_FOUND, "No such tournament");
             HANDLER_EPILOGUE
@@ -73,7 +85,7 @@ class PairingServerImpl final : public PairingServer::Service {
         Status GetPlayers(ServerContext *ctx, const Identification *req, ServerWriter<Player> *writer) override {
             HANDLER_PROLOGUE
             IDENTIFIED(*req, "tournament");
-            for(Player &p: db.tournamentPlayers(req)) {
+            for(Player &p: db().tournamentPlayers(req)) {
                 /* TODO: If the request is correctly signed, also sign the
                  * player objects returned, since someone with write access to
                  * the tournament transitively should have write access to
@@ -88,7 +100,7 @@ class PairingServerImpl final : public PairingServer::Service {
         Status GetGames(ServerContext *ctx, const Identification *req, ServerWriter<Game> *writer) override {
             HANDLER_PROLOGUE
             IDENTIFIED(*req, "tournament");
-            for(Game &g: db.tournamentGames(req)) {
+            for(Game &g: db().tournamentGames(req)) {
                 /* TODO: If the request is correctly signed, also sign the
                  * game objects returned, since someone with write access to
                  * the tournament transitively should have write access to
@@ -103,7 +115,7 @@ class PairingServerImpl final : public PairingServer::Service {
         Status CreateTournament(ServerContext *ctx, const Tournament *req, Identification *resp) override {
             HANDLER_PROLOGUE
             COMPLETE(*req, "tournament");
-            *resp = db.insertTournament(req);
+            *resp = db().insertTournament(req);
             sign(*resp);
             return Status::OK;
             HANDLER_EPILOGUE
@@ -120,8 +132,8 @@ class PairingServerImpl final : public PairingServer::Service {
             Game g;
             Tournament t;
             *(t.mutable_id()) = *req;
-            db.getTournament(&t);
-            uint32_t nextRound = db.nextRound(req);
+            db().getTournament(&t);
+            uint32_t nextRound = db().nextRound(req);
             if(t.rounds() < nextRound) {
                 return Status(StatusCode::INVALID_ARGUMENT, "Last round paired");
             }
@@ -130,14 +142,14 @@ class PairingServerImpl final : public PairingServer::Service {
             g.set_round(nextRound);
             bool white = true;
             try {
-                db.transaction([&] {
-                    for(Player &p: db.tournamentPlayers(req)) {
+                db().transaction([&] {
+                    for(Player &p: db().tournamentPlayers(req)) {
                         if(white) {
                             *(g.mutable_white()) = p;
                         }
                         else {
                             *(g.mutable_black()) = p;
-                            Identification id = db.insertGame(&g);
+                            Identification id = db().insertGame(&g);
                             sign(id);
                             *(g.mutable_id()) = id;
                             writer->Write(g);
@@ -147,7 +159,7 @@ class PairingServerImpl final : public PairingServer::Service {
                         white = !white;
                     }
                     if(g.has_white()) {
-                        Identification id = db.insertGame(&g);
+                        Identification id = db().insertGame(&g);
                         sign(id);
                         *(g.mutable_id()) = id;
                         writer->Write(g);
@@ -170,7 +182,7 @@ class PairingServerImpl final : public PairingServer::Service {
              * we may also want to require admin privileges to the tournament
              * for late registrations.
              */
-            *resp = db.insertPlayer(req);
+            *resp = db().insertPlayer(req);
             sign(*resp);
             return Status::OK;
             HANDLER_EPILOGUE
@@ -186,15 +198,13 @@ class PairingServerImpl final : public PairingServer::Service {
              * registered is semantically different and should go through a
              * different operation (with different access restrictions).
              */
-            db.registerResult(req->gameid(), req->result());
+            db().registerResult(req->gameid(), req->result());
             return Status::OK;
             HANDLER_EPILOGUE
         }
 
     private:
         std::string secret;
-        std::mutex db_lock;
-        Database db;
 
         std::string hmac(const Identification &id) {
             char buf[EVP_MAX_MD_SIZE];
@@ -269,7 +279,6 @@ const char *getArg(const char **argv, int i, int argc, const char *arg) {
 
 int main(int argc, const char **argv) {
     try {
-        const char *dbname, *dbuser, *dbpass;
         const char *listen = "127.0.0.1";
         const char *port = "1234";
         for(int i = 1; i < argc; i++) {
@@ -294,7 +303,7 @@ int main(int argc, const char **argv) {
 
         std::string address = listen + std::string(":") + port;
         const char *secret = "deadbeef"; // TODO: Read from secret file.
-        PairingServerImpl service(secret, dbname, dbuser, dbpass);
+        PairingServerImpl service(secret);
         ServerBuilder builder;
         // TODO: Optionally SSL server credentials.
         builder.AddListeningPort(address, InsecureServerCredentials());
