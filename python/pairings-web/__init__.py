@@ -1,8 +1,8 @@
 from flask import Flask, redirect, render_template, request, url_for
 import grpc
 
-from .types_pb2 import Tournament, Player, Game, Identification
-from .service_pb2_grpc import PairingServerStub
+from .proto.types_pb2 import Tournament, Player, Game, Identification
+from .proto.service_pb2_grpc import PairingServerStub
 
 app = Flask(__name__)
 stub = PairingServerStub(grpc.insecure_channel("localhost:1234"))
