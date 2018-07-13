@@ -75,7 +75,14 @@ class PairingServerImpl final : public PairingServer::Service {
         Status GetTournament(ServerContext *ctx, const Identification *req, Tournament *resp) override {
             HANDLER_PROLOGUE
             IDENTIFIED(*req, "tournament");
-            resp->mutable_id()->set_uuid(req->uuid());
+            /* XXX: This just returns any HMAC given by the client without
+             * inspecting it. Clearing it or rejecting the request if the
+             * signature is invalid might leak information. OTOH, write
+             * operations will leak that informations *anyway*, so might not
+             * matter in the grand scheme of things. Requires some more
+             * pondering, I think.
+             */
+            *(resp->mutable_id()) = *req;
             return db().getTournament(resp)?
                 Status::OK:
                 Status(StatusCode::NOT_FOUND, "No such tournament");
