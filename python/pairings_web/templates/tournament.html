@@ -21,13 +21,16 @@
     <p>No players registered.</p>
 {%- endif %}
     <h2>Games</h2>
-{% set games = tournament.games() %}
+{% set games = tournament.games_by_round() %}
 {%- if games %}
+    {%- for round, round_games in games %}
+    <h3>Round {{ round }}</h3>
     <ul>
-    {%- for game in games %}
+        {%- for game in round_games %}
         <li><a href="/game/{{ game.id.link_fragment() }}">{{ game.description() }}</a></li>
-    {%- endfor %}
+        {%- endfor %}
     </ul>
+    {%- endfor %}
 {%- else %}
     <p>No games paired.</p>
 {%- endif %}

@@ -1,5 +1,7 @@
 import grpc
 from google.protobuf.message import Message
+import itertools
+from operator import attrgetter
 
 import pairings_web.proto.types_pb2 as types
 from .proto.service_pb2_grpc import PairingServerStub
@@ -95,6 +97,16 @@ class Tournament (ModelObject):
     def games(self):
         return self._connection.games(*self.id.id_pair())
 
+    def games_by_round(self):
+        # Games, sorted by round, with reverese sort rating as tie breaker.
+        roundget = attrgetter("round")
+        games = self.games()
+        if not games: return None
+        games = sorted(
+                    sorted(games, key=Game.sort_rating, reverse=True),
+                    key=roundget)
+        return itertools.groupby(games, roundget)
+
     def players(self):
         return self._connection.players(*self.id.id_pair())
 
@@ -120,7 +132,17 @@ class Game (ModelObject):
     def description(self):
         return "Round %d: %s vs. %s" % (self.round,
                 self.white.description(), self.black.description() if
-                self.has_field("black") else "Noone")
+                self.has_black() else "Noone")
+
+    def has_black(self):
+        return self.has_field("black")
+
+    def sort_rating(self):
+        # For sorting games we use the maximum of the two players' ratings, or
+        # 0 for byes/no-shows.
+        return max(self.white.rating, self.black.rating) if self.has_black() else 0
+
+
 
 ModelObject.models = {
         types.Hmac: Hmac,
