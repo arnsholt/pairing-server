@@ -33,10 +33,14 @@ void Database::connect() {
             "SELECT MAX(round) + 1 AS round\n"
             "FROM game INNER JOIN tournament t ON tournament = t.id\n"
             "WHERE t.uuid = $1", 1);
+    prepare("get_player",
+            "SELECT player_name, rating, withdrawn, expelled FROM player WHERE uuid = $1", 1);
     prepare("players",
             "SELECT player_name, rating, p.uuid AS uuid\n"
             "FROM player p INNER JOIN tournament t ON p.tournament = t.id\n"
             "WHERE t.uuid = $1", 1);
+    prepare("get_game",
+            "SELECT white, black, round, result FROM game WHERE uuid = $1", 1);
     prepare("games",
            "SELECT w.player_name AS white_name, w.rating AS white_rating, w.uuid AS white_uuid,\n"
            "       b.player_name AS black_name, b.rating AS black_rating, b.uuid AS black_uuid,\n"
