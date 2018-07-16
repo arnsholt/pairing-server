@@ -1,7 +1,7 @@
 {% extends "layout/main.html" %}
 {%- block page_title %}{{ tournament.name }}{%- endblock %}
 {% block content %}
-    {%- if tournament.id.has_field("hmac") %}
+    {%- if tournament.signed() %}
     <div class="alert alert-primary">
         You have write permission for this tournament. The URL to this page
         is your <em>only</em> way of accessing it for writing, so don't lose
@@ -14,7 +14,7 @@
 {%- if players %}
     <ol>
     {%- for player in players %}
-        <li><a href="/player/{{ player.id.link_fragment() }}">{{ player.description() }}</a></li>
+        <li><a href="{{ player.link() }}">{{ player.description() }}</a></li>
     {%- endfor %}
     </ol>
 {%- else %}
@@ -27,7 +27,7 @@
     <h3>Round {{ round }}</h3>
     <ul>
         {%- for game in round_games %}
-        <li><a href="/game/{{ game.id.link_fragment() }}">{{ game.description() }}</a></li>
+        <li><a href="{{ game.link() }}">{{ game.description() }}</a></li>
         {%- endfor %}
     </ul>
     {%- endfor %}
