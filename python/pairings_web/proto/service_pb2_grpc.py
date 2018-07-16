@@ -25,8 +25,8 @@ class PairingServerStub(object):
         request_serializer=types__pb2.Identification.SerializeToString,
         response_deserializer=types__pb2.Player.FromString,
         )
-    self.GetGames = channel.unary_stream(
-        '/pairing_server.PairingServer/GetGames',
+    self.GetTournamentGames = channel.unary_stream(
+        '/pairing_server.PairingServer/GetTournamentGames',
         request_serializer=types__pb2.Identification.SerializeToString,
         response_deserializer=types__pb2.Game.FromString,
         )
@@ -40,20 +40,20 @@ class PairingServerStub(object):
         request_serializer=types__pb2.Identification.SerializeToString,
         response_deserializer=types__pb2.Game.FromString,
         )
+    self.GetPlayer = channel.unary_unary(
+        '/pairing_server.PairingServer/GetPlayer',
+        request_serializer=types__pb2.Identification.SerializeToString,
+        response_deserializer=types__pb2.Player.FromString,
+        )
+    self.PlayerGames = channel.unary_stream(
+        '/pairing_server.PairingServer/PlayerGames',
+        request_serializer=types__pb2.Identification.SerializeToString,
+        response_deserializer=types__pb2.Game.FromString,
+        )
     self.SignupPlayer = channel.unary_unary(
         '/pairing_server.PairingServer/SignupPlayer',
         request_serializer=types__pb2.Player.SerializeToString,
         response_deserializer=types__pb2.Identification.FromString,
-        )
-    self.RegisterResult = channel.unary_unary(
-        '/pairing_server.PairingServer/RegisterResult',
-        request_serializer=service__pb2.RegisterResultRequest.SerializeToString,
-        response_deserializer=service__pb2.Nothing.FromString,
-        )
-    self.ChangeResult = channel.unary_unary(
-        '/pairing_server.PairingServer/ChangeResult',
-        request_serializer=service__pb2.ChangeResultRequest.SerializeToString,
-        response_deserializer=service__pb2.Nothing.FromString,
         )
     self.Withdraw = channel.unary_unary(
         '/pairing_server.PairingServer/Withdraw',
@@ -75,6 +75,21 @@ class PairingServerStub(object):
         request_serializer=service__pb2.ExpulsionRequest.SerializeToString,
         response_deserializer=service__pb2.Nothing.FromString,
         )
+    self.GetGame = channel.unary_unary(
+        '/pairing_server.PairingServer/GetGame',
+        request_serializer=types__pb2.Identification.SerializeToString,
+        response_deserializer=types__pb2.Game.FromString,
+        )
+    self.RegisterResult = channel.unary_unary(
+        '/pairing_server.PairingServer/RegisterResult',
+        request_serializer=service__pb2.RegisterResultRequest.SerializeToString,
+        response_deserializer=service__pb2.Nothing.FromString,
+        )
+    self.ChangeResult = channel.unary_unary(
+        '/pairing_server.PairingServer/ChangeResult',
+        request_serializer=service__pb2.ChangeResultRequest.SerializeToString,
+        response_deserializer=service__pb2.Nothing.FromString,
+        )
 
 
 class PairingServerServicer(object):
@@ -82,8 +97,8 @@ class PairingServerServicer(object):
   pass
 
   def GetTournament(self, request, context):
-    # missing associated documentation comment in .proto file
-    pass
+    """Operations on tournaments:
+    """
     context.set_code(grpc.StatusCode.UNIMPLEMENTED)
     context.set_details('Method not implemented!')
     raise NotImplementedError('Method not implemented!')
@@ -95,7 +110,7 @@ class PairingServerServicer(object):
     context.set_details('Method not implemented!')
     raise NotImplementedError('Method not implemented!')
 
-  def GetGames(self, request, context):
+  def GetTournamentGames(self, request, context):
     # missing associated documentation comment in .proto file
     pass
     context.set_code(grpc.StatusCode.UNIMPLEMENTED)
@@ -116,21 +131,21 @@ class PairingServerServicer(object):
     context.set_details('Method not implemented!')
     raise NotImplementedError('Method not implemented!')
 
+  def GetPlayer(self, request, context):
+    """Operations on players:
+    """
+    context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+    context.set_details('Method not implemented!')
+    raise NotImplementedError('Method not implemented!')
+
+  def PlayerGames(self, request, context):
+    # missing associated documentation comment in .proto file
+    pass
+    context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+    context.set_details('Method not implemented!')
+    raise NotImplementedError('Method not implemented!')
+
   def SignupPlayer(self, request, context):
-    # missing associated documentation comment in .proto file
-    pass
-    context.set_code(grpc.StatusCode.UNIMPLEMENTED)
-    context.set_details('Method not implemented!')
-    raise NotImplementedError('Method not implemented!')
-
-  def RegisterResult(self, request, context):
-    # missing associated documentation comment in .proto file
-    pass
-    context.set_code(grpc.StatusCode.UNIMPLEMENTED)
-    context.set_details('Method not implemented!')
-    raise NotImplementedError('Method not implemented!')
-
-  def ChangeResult(self, request, context):
     # missing associated documentation comment in .proto file
     pass
     context.set_code(grpc.StatusCode.UNIMPLEMENTED)
@@ -165,6 +180,27 @@ class PairingServerServicer(object):
     context.set_details('Method not implemented!')
     raise NotImplementedError('Method not implemented!')
 
+  def GetGame(self, request, context):
+    """Operations on games:
+    """
+    context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+    context.set_details('Method not implemented!')
+    raise NotImplementedError('Method not implemented!')
+
+  def RegisterResult(self, request, context):
+    # missing associated documentation comment in .proto file
+    pass
+    context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+    context.set_details('Method not implemented!')
+    raise NotImplementedError('Method not implemented!')
+
+  def ChangeResult(self, request, context):
+    # missing associated documentation comment in .proto file
+    pass
+    context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+    context.set_details('Method not implemented!')
+    raise NotImplementedError('Method not implemented!')
+
 
 def add_PairingServerServicer_to_server(servicer, server):
   rpc_method_handlers = {
@@ -178,8 +214,8 @@ def add_PairingServerServicer_to_server(servicer, server):
           request_deserializer=types__pb2.Identification.FromString,
           response_serializer=types__pb2.Player.SerializeToString,
       ),
-      'GetGames': grpc.unary_stream_rpc_method_handler(
-          servicer.GetGames,
+      'GetTournamentGames': grpc.unary_stream_rpc_method_handler(
+          servicer.GetTournamentGames,
           request_deserializer=types__pb2.Identification.FromString,
           response_serializer=types__pb2.Game.SerializeToString,
       ),
@@ -193,20 +229,20 @@ def add_PairingServerServicer_to_server(servicer, server):
           request_deserializer=types__pb2.Identification.FromString,
           response_serializer=types__pb2.Game.SerializeToString,
       ),
+      'GetPlayer': grpc.unary_unary_rpc_method_handler(
+          servicer.GetPlayer,
+          request_deserializer=types__pb2.Identification.FromString,
+          response_serializer=types__pb2.Player.SerializeToString,
+      ),
+      'PlayerGames': grpc.unary_stream_rpc_method_handler(
+          servicer.PlayerGames,
+          request_deserializer=types__pb2.Identification.FromString,
+          response_serializer=types__pb2.Game.SerializeToString,
+      ),
       'SignupPlayer': grpc.unary_unary_rpc_method_handler(
           servicer.SignupPlayer,
           request_deserializer=types__pb2.Player.FromString,
           response_serializer=types__pb2.Identification.SerializeToString,
-      ),
-      'RegisterResult': grpc.unary_unary_rpc_method_handler(
-          servicer.RegisterResult,
-          request_deserializer=service__pb2.RegisterResultRequest.FromString,
-          response_serializer=service__pb2.Nothing.SerializeToString,
-      ),
-      'ChangeResult': grpc.unary_unary_rpc_method_handler(
-          servicer.ChangeResult,
-          request_deserializer=service__pb2.ChangeResultRequest.FromString,
-          response_serializer=service__pb2.Nothing.SerializeToString,
       ),
       'Withdraw': grpc.unary_unary_rpc_method_handler(
           servicer.Withdraw,
@@ -226,6 +262,21 @@ def add_PairingServerServicer_to_server(servicer, server):
       'Readmit': grpc.unary_unary_rpc_method_handler(
           servicer.Readmit,
           request_deserializer=service__pb2.ExpulsionRequest.FromString,
+          response_serializer=service__pb2.Nothing.SerializeToString,
+      ),
+      'GetGame': grpc.unary_unary_rpc_method_handler(
+          servicer.GetGame,
+          request_deserializer=types__pb2.Identification.FromString,
+          response_serializer=types__pb2.Game.SerializeToString,
+      ),
+      'RegisterResult': grpc.unary_unary_rpc_method_handler(
+          servicer.RegisterResult,
+          request_deserializer=service__pb2.RegisterResultRequest.FromString,
+          response_serializer=service__pb2.Nothing.SerializeToString,
+      ),
+      'ChangeResult': grpc.unary_unary_rpc_method_handler(
+          servicer.ChangeResult,
+          request_deserializer=service__pb2.ChangeResultRequest.FromString,
           response_serializer=service__pb2.Nothing.SerializeToString,
       ),
   }

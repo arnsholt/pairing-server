@@ -14,21 +14,40 @@ class Connection:
         t = types.Tournament()
         t.name = name
         t.rounds = rounds
-        t.id = self.stub.CreateTournament(t)
+        t.id.CopyFrom(self.stub.CreateTournament(t))
         return self.model(t)
 
     def tournament(self, uuid, hmac=None):
-        t = self.model(self.stub.GetTournament(self.ident(uuid, hmac)))
-        return t
+        return self.model(self.stub.GetTournament(self.ident(uuid, hmac)))
 
-    def games(self, uuid, hmac=None):
-        return [self.model(g) for g in self.stub.GetGames(self.ident(uuid, hmac))]
+    def tournament_games(self, uuid, hmac=None):
+        return self.models(self.stub.GetTournamentGames(self.ident(uuid, hmac)))
+
+    def pair_next_round(self, uuid, hmac):
+        return self.models(self.stub.PairNextRound(self.ident(uuid, hmac)))
+
+    def new_player(self, name, rating, tournament):
+        p = types.Player()
+        p.name = name
+        p.rating = rating
+        p.tournament.id.uuid = tournament.id.uuid
+        p.id.CopyFrom(self.stub.SignupPlayer(p))
+        return self.model(p)
 
     def players(self, uuid, hmac=None):
-        return [self.model(p) for p in self.stub.GetPlayers(self.ident(uuid, hmac))]
+        return self.models(self.stub.GetPlayers(self.ident(uuid, hmac)))
+
+    def player(self, uuid, hmac=None):
+        return self.model(self.stub.GetPlayer(self.ident(uuid, hmac)))
+
+    def player_games(self, uuid, hmac=None):
+        return self.models(self.stub.GetPlayerGames(self.ident(uuid, hmac)))
 
     def model(self, proto):
         return ModelObject.on(proto, self)
+
+    def models(self, protos):
+        return [self.model(proto) for proto in protos]
 
     def ident(self, uuid, hmac=None):
         ident = types.Identification()
@@ -89,16 +108,31 @@ class Identification(ModelObject):
         else:
             return self.uuid.hex()
 
-class Tournament (ModelObject):
+class DomainObject(ModelObject):
     id = modelattribute("id")
+
+    def signed(self):
+        return self.id.has_field("hmac")
+
+    @staticmethod
+    def link_prefix():
+        raise NotImplementedError
+
+    def link(self):
+        return "/%s/%s" % (self.link_prefix(), self.id.link_fragment())
+
+class Tournament (DomainObject):
     name = modelattribute("name")
     rounds = modelattribute("rounds")
 
+    @staticmethod
+    def link_prefix(): return "tournament"
+
     def games(self):
-        return self._connection.games(*self.id.id_pair())
+        return self._connection.tournament_games(*self.id.id_pair())
 
     def games_by_round(self):
-        # Games, sorted by round, with reverese sort rating as tie breaker.
+        # Games, sorted by round, with reverse sort on rating as tie breaker.
         roundget = attrgetter("round")
         games = self.games()
         if not games: return None
@@ -110,24 +144,31 @@ class Tournament (ModelObject):
     def players(self):
         return self._connection.players(*self.id.id_pair())
 
-class Player (ModelObject):
-    id = modelattribute("id")
+class Player (DomainObject):
     name = modelattribute("name")
     tournament = modelattribute("tournament")
     rating = modelattribute("rating")
     withdrawn = modelattribute("withdrawn")
     expelled = modelattribute("expelled")
 
+    @staticmethod
+    def link_prefix(): return "player"
+
     def description(self):
         return "%s (%d)" % (self.name, self.rating)
 
-class Game (ModelObject):
-    id = modelattribute("id")
+    def games(self):
+        return self._connection.player_games(*self.id.id_pair())
+
+class Game (DomainObject):
     tournament = modelattribute("tournament")
     round = modelattribute("round")
     white = modelattribute("white")
     black = modelattribute("black")
     result = modelattribute("result")
+
+    @staticmethod
+    def link_prefix(): return "game"
 
     def description(self):
         return "Round %d: %s vs. %s" % (self.round,
