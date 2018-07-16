@@ -77,6 +77,9 @@ void Database::connect() {
             "WHERE t.uuid = $1 AND w.uuid = $2\n"
             "RETURNING uuid", 4);
 
+    /* XXX: Consider forcing register_result to only work on games with no
+     * result (by adding WHERE result IS NULL) and adding a separate query to
+     * update a result. */
     prepare("register_result",
             "UPDATE game SET result = $1 WHERE uuid = $2", 2);
 }
