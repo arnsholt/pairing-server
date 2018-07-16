@@ -185,7 +185,11 @@ class PairingServerImpl final : public PairingServer::Service {
         Status GetPlayer(ServerContext *ctx, const Identification *req, Player *resp) override {
             // TODO
             HANDLER_PROLOGUE
-            return Status::OK;
+            IDENTIFIED(*req, "player");
+            *(resp->mutable_id()) = *req;
+            return db().getPlayer(resp)?
+                Status::OK:
+                Status(StatusCode::NOT_FOUND, "No such player");
             HANDLER_EPILOGUE
         }
 

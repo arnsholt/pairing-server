@@ -35,15 +35,19 @@ class Database {
             commit();
         }
 
+        // Operations on tournaments:
         bool getTournament(pairing_server::Tournament *t);
         int nextRound(const pairing_server::Identification *id);
         std::vector<pairing_server::Player> tournamentPlayers(const pairing_server::Identification *id);
         std::vector<pairing_server::Game> tournamentGames(const pairing_server::Identification *id);
-
         pairing_server::Identification insertTournament(const pairing_server::Tournament *t);
-        pairing_server::Identification insertPlayer(const pairing_server::Player *p);
-        pairing_server::Identification insertGame(const pairing_server::Game *g);
 
+        // Operations on players:
+        bool getPlayer(pairing_server::Player *p);
+        pairing_server::Identification insertPlayer(const pairing_server::Player *p);
+
+        // Operations on games:
+        pairing_server::Identification insertGame(const pairing_server::Game *g);
         void registerResult(const pairing_server::Identification &gameId, pairing_server::Result result);
 
     private:
@@ -59,7 +63,8 @@ class Database {
         void sqlDo(const char *sql);
         pairing_server::Player playerFromRow(PGresult *res, int i,
                 const char *name_col = "player_name", const char *rating_col = "rating",
-                const char *uuid_col = "uuid");
+                const char *uuid_col = "uuid", const char *withdrawn_col = "withdrawn",
+                const char *expelled_col = "expelled");
 };
 
 class DatabaseError : public std::exception {

@@ -34,7 +34,10 @@ void Database::connect() {
             "FROM game INNER JOIN tournament t ON tournament = t.id\n"
             "WHERE t.uuid = $1", 1);
     prepare("get_player",
-            "SELECT player_name, rating, withdrawn, expelled FROM player WHERE uuid = $1", 1);
+            "SELECT p.uuid AS uuid, player_name, rating, withdrawn, expelled,\n"
+            "   t.name AS tournament_name, t.uuid AS tournament_uuid, rounds\n"
+            "FROM player p INNER JOIN tournament t ON tournament = t.id\n"
+            "WHERE p.uuid = $1", 1);
     prepare("players",
             "SELECT player_name, rating, p.uuid AS uuid\n"
             "FROM player p INNER JOIN tournament t ON p.tournament = t.id\n"
@@ -185,6 +188,23 @@ Identification Database::insertTournament(const Tournament *t) {
     return ident;
 }
 
+bool Database::getPlayer(Player *p) {
+    const char *values[] = {p->id().uuid().c_str()};
+    const int lengths[] = {16};
+    const int formats[] = {1};
+    PGresult *res = execute("get_player", 1, &values[0], &lengths[0], &formats[0], 1, 0, 1);
+    bool found = false;
+    if(PQntuples(res) > 0) {
+        found = true;
+        *p = playerFromRow(res, 0);
+        p->mutable_tournament()->set_name(PQgetvalue(res, 0, PQfnumber(res, "tournament_name")));
+        p->mutable_tournament()->set_rounds(intify(PQgetvalue(res, 0, PQfnumber(res, "rounds"))));
+        p->mutable_tournament()->mutable_id()->set_uuid(PQgetvalue(res, 0, PQfnumber(res, "tournament_uuid")));
+    }
+    PQclear(res);
+    return found;
+}
+
 Identification Database::insertPlayer(const Player *p) {
     uint32_t netRating = htonl(p->rating());
     const char *values[] = {p->name().c_str(), (char *) &netRating,
@@ -282,10 +302,31 @@ PGresult *Database::execute(const char *stmt, int count, const char **values,
     return res;
 }
 
-Player Database::playerFromRow(PGresult *res, int i, const char *name_col, const char *rating_col, const char *uuid_col) {
+Player Database::playerFromRow(PGresult *res, int i, const char *name_col,
+        const char *rating_col, const char *uuid_col, const char *withdrawn_col,
+        const char *expelled_col) {
     Player p;
-    p.mutable_id()->set_uuid(PQgetvalue(res, i, PQfnumber(res, uuid_col)), 16);
-    p.set_name(PQgetvalue(res, i, PQfnumber(res, name_col)));
-    p.set_rating(intify(PQgetvalue(res, i, PQfnumber(res, rating_col))));
+    int fnum;
+
+    if((fnum = PQfnumber(res, uuid_col)) >= 0)
+        p.mutable_id()->set_uuid(PQgetvalue(res, i, fnum), 16);
+    else
+        throw DatabaseError("UUID column missing in row.");
+    if((fnum = PQfnumber(res, name_col)) >= 0)
+        p.set_name(PQgetvalue(res, i, fnum));
+    else
+        throw DatabaseError("Name column missing in row.");
+    if((fnum = PQfnumber(res, rating_col)) >= 0)
+        p.set_rating(intify(PQgetvalue(res, i, fnum)));
+    else
+        throw DatabaseError("Rating column missing in row.");
+
+    // Withdrawn and expelled are optional.
+    if((fnum = PQfnumber(res, withdrawn_col)) >= 0) {
+        p.set_withdrawn(intify(PQgetvalue(res, i, fnum)));
+    }
+    if((fnum = PQfnumber(res, expelled_col)) >= 0) {
+        p.set_expelled(intify(PQgetvalue(res, i, fnum)));
+    }
     return p;
 }
