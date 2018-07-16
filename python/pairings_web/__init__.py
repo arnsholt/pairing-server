@@ -25,6 +25,16 @@ def tournament_post():
 @app.route('/tournament/<uuid>/<hmac>/')
 def tournament(uuid, hmac=None):
     uuid = bytes.fromhex(uuid)
-    hmac = bytes.fromhex(hmac)
+    if hmac is not None:
+        hmac = bytes.fromhex(hmac)
     return render_template('tournament.html',
             tournament=connection.tournament(uuid, hmac))
+
+@app.route('/player/<uuid>/')
+@app.route('/player/<uuid>/<hmac>/')
+def player(uuid, hmac=None):
+    uuid = bytes.fromhex(uuid)
+    if hmac is not None:
+        hmac = bytes.fromhex(hmac)
+    return render_template('player.html',
+            player=connection.player(uuid, hmac))

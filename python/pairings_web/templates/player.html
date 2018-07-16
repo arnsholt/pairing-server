@@ -1,0 +1,19 @@
+{% extends "layout/main.html" %}
+{%- block page_title %}{{ player.description() }}{%- endblock %}
+{% block content %}
+    {%- if player.signed() %}
+    <div class="alert alert-primary">
+        You have write permission for this player. The URL to this page is
+        your <em>only</em> way of accessing it for writing, so don't lose it!
+    </div>
+    {%- endif %}
+    <p>Participating in
+    <a href="{{ player.tournament.link() }}">{{ player.tournament.name }}</a>.
+    {%- if player.expelled %}
+    Currently expelled from the tournament.
+    {%- elif player.withdrawn %}
+    Currently withdrawn from the tournament.
+    {%- endif %}
+    </p>
+    <!-- TODO: Games. -->
+{%- endblock %}
