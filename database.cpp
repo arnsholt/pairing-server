@@ -199,7 +199,7 @@ bool Database::getPlayer(Player *p) {
         *p = playerFromRow(res, 0);
         p->mutable_tournament()->set_name(PQgetvalue(res, 0, PQfnumber(res, "tournament_name")));
         p->mutable_tournament()->set_rounds(intify(PQgetvalue(res, 0, PQfnumber(res, "rounds"))));
-        p->mutable_tournament()->mutable_id()->set_uuid(PQgetvalue(res, 0, PQfnumber(res, "tournament_uuid")));
+        p->mutable_tournament()->mutable_id()->set_uuid(PQgetvalue(res, 0, PQfnumber(res, "tournament_uuid")), 16);
     }
     PQclear(res);
     return found;
