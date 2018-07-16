@@ -72,6 +72,8 @@ class PairingServerImpl final : public PairingServer::Service {
                                      std::cerr << "Got other exception (" << __FILE__ << ":" << __LINE__ << "): " << e.what() << std::endl; \
                                      return Status(StatusCode::INTERNAL, "Other error", e.what()); \
                                  }
+
+        // Operations on tournaments:
         Status GetTournament(ServerContext *ctx, const Identification *req, Tournament *resp) override {
             HANDLER_PROLOGUE
             IDENTIFIED(*req, "tournament");
@@ -104,7 +106,7 @@ class PairingServerImpl final : public PairingServer::Service {
             HANDLER_EPILOGUE
         }
 
-        Status GetGames(ServerContext *ctx, const Identification *req, ServerWriter<Game> *writer) override {
+        Status GetTournamentGames(ServerContext *ctx, const Identification *req, ServerWriter<Game> *writer) override {
             HANDLER_PROLOGUE
             IDENTIFIED(*req, "tournament");
             for(Game &g: db().tournamentGames(req)) {
@@ -179,6 +181,21 @@ class PairingServerImpl final : public PairingServer::Service {
             HANDLER_EPILOGUE
         }
 
+        // Operations on players:
+        Status GetPlayer(ServerContext *ctx, const Identification *req, Player *resp) override {
+            // TODO
+            HANDLER_PROLOGUE
+            return Status::OK;
+            HANDLER_EPILOGUE
+        }
+
+        Status PlayerGames(ServerContext *ctx, const Identification *req, ServerWriter<Game> *resp) override {
+            // TODO
+            HANDLER_PROLOGUE
+            return Status::OK;
+            HANDLER_EPILOGUE
+        }
+
         Status SignupPlayer(ServerContext *ctx, const Player *req, Identification *resp) override {
             HANDLER_PROLOGUE
             COMPLETE(*req, "player");
@@ -195,6 +212,42 @@ class PairingServerImpl final : public PairingServer::Service {
             HANDLER_EPILOGUE
         }
 
+        Status Withdraw(ServerContext *ctx, const Identification *req, Nothing *resp) override {
+            // TODO
+            HANDLER_PROLOGUE
+            return Status::OK;
+            HANDLER_EPILOGUE
+        }
+
+        Status Reenter(ServerContext *ctx, const Identification *req, Nothing *resp) override {
+            // TODO
+            HANDLER_PROLOGUE
+            return Status::OK;
+            HANDLER_EPILOGUE
+        }
+
+        Status Expel(ServerContext *ctx, const ExpulsionRequest *req, Nothing *resp) override {
+            // TODO
+            HANDLER_PROLOGUE
+            return Status::OK;
+            HANDLER_EPILOGUE
+        }
+
+        Status Readmit(ServerContext *ctx, const ExpulsionRequest *req, Nothing *resp) override {
+            // TODO
+            HANDLER_PROLOGUE
+            return Status::OK;
+            HANDLER_EPILOGUE
+        }
+
+        // Operations on games:
+        Status GetGame(ServerContext *ctx, const Identification *req, Game *resp) override {
+            // TODO
+            HANDLER_PROLOGUE
+            return Status::OK;
+            HANDLER_EPILOGUE
+        }
+
         Status RegisterResult(ServerContext *ctx, const RegisterResultRequest *req, Nothing *resp) override {
             HANDLER_PROLOGUE
             IDENTIFIED(req->gameid(), "game");
@@ -206,6 +259,13 @@ class PairingServerImpl final : public PairingServer::Service {
              * different operation (with different access restrictions).
              */
             db().registerResult(req->gameid(), req->result());
+            return Status::OK;
+            HANDLER_EPILOGUE
+        }
+
+        Status ChangeResult(ServerContext *ctx, const ChangeResultRequest *req, Nothing *resp) override {
+            // TODO
+            HANDLER_PROLOGUE
             return Status::OK;
             HANDLER_EPILOGUE
         }

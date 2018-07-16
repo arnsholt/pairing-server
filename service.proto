@@ -23,20 +23,27 @@ message ExpulsionRequest {
 message Nothing {}
 
 service PairingServer {
+    // Operations on tournaments:
     rpc GetTournament(Identification) returns (Tournament) {}
     rpc GetPlayers(Identification) returns (stream Player) {}
-    rpc GetGames(Identification) returns (stream Game) {}
+    rpc GetTournamentGames(Identification) returns (stream Game) {}
 
     rpc CreateTournament(Tournament) returns (Identification) {}
     rpc PairNextRound(Identification) returns (stream Game) {}
 
+    // Operations on players:
+    rpc GetPlayer(Identification) returns (Player) {}
+    rpc PlayerGames(Identification) returns (stream Game) {}
     rpc SignupPlayer(Player) returns (Identification) {}
-    rpc RegisterResult(RegisterResultRequest) returns (Nothing) {}
-    rpc ChangeResult(ChangeResultRequest) returns (Nothing) {}
 
     rpc Withdraw(Identification) returns (Nothing) {}
     rpc Reenter(Identification) returns (Nothing) {}
 
     rpc Expel(ExpulsionRequest) returns (Nothing) {}
     rpc Readmit(ExpulsionRequest) returns (Nothing) {}
+
+    // Operations on games:
+    rpc GetGame(Identification) returns (Game) {}
+    rpc RegisterResult(RegisterResultRequest) returns (Nothing) {}
+    rpc ChangeResult(ChangeResultRequest) returns (Nothing) {}
 }
