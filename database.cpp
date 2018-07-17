@@ -60,6 +60,15 @@ void Database::connect() {
             "INSERT INTO player(player_name, rating, tournament)\n"
             "SELECT $1, $2, id FROM tournament WHERE uuid = $3\n"
             "RETURNING uuid", 3);
+    prepare("player_games",
+           "SELECT w.player_name AS white_name, w.rating AS white_rating, w.uuid AS white_uuid,\n"
+           "       b.player_name AS black_name, b.rating AS black_rating, b.uuid AS black_uuid,\n"
+           "       result, round, g.uuid AS uuid\n"
+           "FROM game g INNER JOIN tournament t ON tournament = t.id\n"
+           "            INNER JOIN player w ON white = w.id\n"
+           "            LEFT  JOIN player b ON black = b.id\n"
+           "WHERE w.uuid = $1 or b.uuid = $1\n"
+           "ORDER BY round", 1);
 
     // Operations on games:
     prepare("get_game",
@@ -208,6 +217,26 @@ bool Database::getPlayer(Player *p) {
     }
     PQclear(res);
     return found;
+}
+
+std::vector<Game> Database::playerGames(const Identification *id) {
+    const char *values[] = {id->uuid().c_str()};
+    const int lengths[] = {16};
+    const int formats[] = {1};
+    PGresult *res = execute("player_games", 1, &values[0], &lengths[0], &formats[0], 1);
+    std::vector<Game> vec(PQntuples(res));
+    for(int i = 0; i < PQntuples(res); i++) {
+        vec[i] = Game();
+        vec[i].mutable_id()->set_uuid(PQgetvalue(res, i, PQfnumber(res, "uuid")), 16);
+        vec[i].set_round(intify(PQgetvalue(res, i, PQfnumber(res, "round"))));
+        if(!PQgetisnull(res, i, PQfnumber(res, "result"))) {
+            vec[i].set_result(static_cast<Result>(intify(PQgetvalue(res, i, PQfnumber(res, "result")))));
+        }
+        *(vec[i].mutable_white()) = playerFromRow(res, i, "white_name", "white_rating", "white_uuid");
+        if(!PQgetisnull(res, i, PQfnumber(res, "black_name")))
+            *(vec[i].mutable_black()) = playerFromRow(res, i, "black_name", "black_rating", "black_uuid");
+    }
+    return vec;
 }
 
 Identification Database::insertPlayer(const Player *p) {

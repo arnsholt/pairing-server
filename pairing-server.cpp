@@ -192,9 +192,12 @@ class PairingServerImpl final : public PairingServer::Service {
             HANDLER_EPILOGUE
         }
 
-        Status PlayerGames(ServerContext *ctx, const Identification *req, ServerWriter<Game> *resp) override {
-            // TODO
+        Status PlayerGames(ServerContext *ctx, const Identification *req, ServerWriter<Game> *writer) override {
             HANDLER_PROLOGUE
+            IDENTIFIED(*req, "player");
+            for(Game &g: db().playerGames(req)) {
+                writer->Write(g);
+            }
             return Status::OK;
             HANDLER_EPILOGUE
         }

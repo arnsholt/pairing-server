@@ -44,6 +44,7 @@ class Database {
 
         // Operations on players:
         bool getPlayer(pairing_server::Player *p);
+        std::vector<pairing_server::Game> playerGames(const pairing_server::Identification *id);
         pairing_server::Identification insertPlayer(const pairing_server::Player *p);
 
         // Operations on games:
