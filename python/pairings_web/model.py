@@ -41,7 +41,7 @@ class Connection:
         return self.model(self.stub.GetPlayer(self.ident(uuid, hmac)))
 
     def player_games(self, uuid, hmac=None):
-        return self.models(self.stub.GetPlayerGames(self.ident(uuid, hmac)))
+        return self.models(self.stub.PlayerGames(self.ident(uuid, hmac)))
 
     def model(self, proto):
         return ModelObject.on(proto, self)
@@ -171,9 +171,8 @@ class Game (DomainObject):
     def link_prefix(): return "game"
 
     def description(self):
-        return "Round %d: %s vs. %s" % (self.round,
-                self.white.description(), self.black.description() if
-                self.has_black() else "Noone")
+        return "%s vs. %s" % (self.white.description(),
+                self.black.description() if self.has_black() else "Noone")
 
     def has_black(self):
         return self.has_field("black")

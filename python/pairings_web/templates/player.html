@@ -15,5 +15,14 @@
     Currently withdrawn from the tournament.
     {%- endif %}
     </p>
-    <!-- TODO: Games. -->
+    {%- set games = player.games() %}
+    {%- if games %}
+    <ol>
+        {%- for game in games %}
+        <li><a href="{{ game.link() }}">{{ game.description() }}</a></li>
+        {%- endfor %}
+    </ol>
+    {%- else %}
+    <p>No games paired.</p>
+    {%- endif %}
 {%- endblock %}
