@@ -250,7 +250,11 @@ class PairingServerImpl final : public PairingServer::Service {
         Status GetGame(ServerContext *ctx, const Identification *req, Game *resp) override {
             // TODO
             HANDLER_PROLOGUE
-            return Status::OK;
+            IDENTIFIED(*req, "game");
+            *(resp->mutable_id()) = *req;
+            return db().getGame(resp)?
+                Status::OK:
+                Status(StatusCode::NOT_FOUND, "No such game");
             HANDLER_EPILOGUE
         }
 

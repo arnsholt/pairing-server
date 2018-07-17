@@ -8,6 +8,10 @@ uint32_t intify(const char *x) {
     return ntohl(*(uint32_t *) x);
 }
 
+uint32_t get_int(PGresult *res, int i, const char *field) {
+    return intify(PQgetvalue(res, i, PQfnumber(res, field)));
+}
+
 Database::Database() {}
 
 Database::Database(const char *dbname, const char *user, const char *password, const char *host) :
@@ -72,7 +76,12 @@ void Database::connect() {
 
     // Operations on games:
     prepare("get_game",
-            "SELECT white, black, round, result FROM game WHERE uuid = $1", 1);
+           "SELECT w.player_name AS white_name, w.rating AS white_rating, w.uuid AS white_uuid,\n"
+           "       b.player_name AS black_name, b.rating AS black_rating, b.uuid AS black_uuid,\n"
+           "       result, round, g.uuid AS uuid\n"
+           "FROM game g INNER JOIN player w ON white = w.id\n"
+           "            LEFT  JOIN player b ON black = b.id\n"
+           "WHERE g.uuid = $1", 1);
     prepare("insert_game",
             "INSERT INTO game(tournament, white, black, round)\n"
             "SELECT t.id, w.id, b.id, $4\n"
@@ -251,6 +260,23 @@ Identification Database::insertPlayer(const Player *p) {
     ident.set_uuid(PQgetvalue(res, 0, PQfnumber(res, "uuid")), 16);
     PQclear(res);
     return ident;
+}
+
+bool Database::getGame(Game *g) {
+    const char *values[] {g->id().uuid().c_str()};
+    const int lengths[] = {16};
+    const int formats[] = {1};
+    PGresult *res = execute("get_game", 1, &values[0], &lengths[0], &formats[0], 1, 0, 1);
+    bool found = false;
+    if(PQntuples(res) > 0) {
+        found = true;
+        g->set_round(get_int(res, 0, "round"));
+        *(g->mutable_white()) = playerFromRow(res, 0, "white_name", "white_rating", "white_uuid");
+        if(!PQgetisnull(res, 0, PQfnumber(res, "black_name")))
+            *(g->mutable_black()) = playerFromRow(res, 0, "black_name", "black_rating", "black_uuid");
+    }
+    PQclear(res);
+    return found;
 }
 
 Identification Database::insertGame(const Game *g) {

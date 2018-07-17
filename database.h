@@ -48,6 +48,7 @@ class Database {
         pairing_server::Identification insertPlayer(const pairing_server::Player *p);
 
         // Operations on games:
+        bool getGame(pairing_server::Game *g);
         pairing_server::Identification insertGame(const pairing_server::Game *g);
         void registerResult(const pairing_server::Identification &gameId, pairing_server::Result result);
 
