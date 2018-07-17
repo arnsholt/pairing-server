@@ -38,7 +38,7 @@ void Database::connect() {
             "SELECT player_name, rating, p.uuid AS uuid\n"
             "FROM player p INNER JOIN tournament t ON p.tournament = t.id\n"
             "WHERE t.uuid = $1", 1);
-    prepare("games",
+    prepare("tournament_games",
            "SELECT w.player_name AS white_name, w.rating AS white_rating, w.uuid AS white_uuid,\n"
            "       b.player_name AS black_name, b.rating AS black_rating, b.uuid AS black_uuid,\n"
            "       result, round, g.uuid AS uuid\n"
@@ -163,7 +163,7 @@ std::vector<Game> Database::tournamentGames(const Identification *id) {
     const char *values[] = {id->uuid().c_str()};
     const int formats[] = {1};
     const int lengths[] = {16};
-    PGresult *res = execute("games", 1, &values[0], &lengths[0], &formats[0], 1);
+    PGresult *res = execute("tournament_games", 1, &values[0], &lengths[0], &formats[0], 1);
     std::vector<Game> vec(PQntuples(res));
     for(int i = 0; i < PQntuples(res); i++) {
         vec[i] = Game();
