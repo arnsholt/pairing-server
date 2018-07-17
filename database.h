@@ -63,10 +63,6 @@ class Database {
                 const int *lengths, const int *formats, int resultFormat,
                 int minRows = 0, int maxRows = -1);
         void sqlDo(const char *sql);
-        pairing_server::Player playerFromRow(PGresult *res, int i,
-                const char *name_col = "player_name", const char *rating_col = "rating",
-                const char *uuid_col = "uuid", const char *withdrawn_col = "withdrawn",
-                const char *expelled_col = "expelled");
 };
 
 class DatabaseError : public std::exception {

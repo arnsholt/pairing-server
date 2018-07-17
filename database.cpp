@@ -12,6 +12,55 @@ uint32_t get_int(PGresult *res, int i, const char *field) {
     return intify(PQgetvalue(res, i, PQfnumber(res, field)));
 }
 
+Player playerFromRow(PGresult *res, int i, const char *name_col = "player_name",
+        const char *rating_col = "rating", const char *uuid_col = "uuid",
+        const char *withdrawn_col = "withdrawn", const char *expelled_col = "expelled") {
+    Player p;
+    int fnum;
+
+    if((fnum = PQfnumber(res, uuid_col)) >= 0)
+        p.mutable_id()->set_uuid(PQgetvalue(res, i, fnum), 16);
+    else
+        throw DatabaseError("UUID column missing in row.");
+    if((fnum = PQfnumber(res, name_col)) >= 0)
+        p.set_name(PQgetvalue(res, i, fnum));
+    else
+        throw DatabaseError("Name column missing in row.");
+    if((fnum = PQfnumber(res, rating_col)) >= 0)
+        p.set_rating(intify(PQgetvalue(res, i, fnum)));
+    else
+        throw DatabaseError("Rating column missing in row.");
+
+    // Withdrawn and expelled are optional.
+    if((fnum = PQfnumber(res, withdrawn_col)) >= 0) {
+        p.set_withdrawn(intify(PQgetvalue(res, i, fnum)));
+    }
+    if((fnum = PQfnumber(res, expelled_col)) >= 0) {
+        p.set_expelled(intify(PQgetvalue(res, i, fnum)));
+    }
+    return p;
+}
+
+Game gameFromRow(PGresult *res, int i) {
+    Game g;
+    int fnum;
+
+    if((fnum = PQfnumber(res, "uuid")) >= 0)
+        g.mutable_id()->set_uuid(PQgetvalue(res, i, fnum), 16);
+    else
+        throw DatabaseError("UUID column missing in row");
+    if((fnum = PQfnumber(res, "uuid")) >= 0)
+        g.set_round(get_int(res, i, "result"));
+    else
+        throw DatabaseError("Result column missing in row");
+    *(g.mutable_white()) = playerFromRow(res, i, "white_name", "white_rating", "white_uuid");
+    if(!PQgetisnull(res, i, PQfnumber(res, "black_name"))) {
+        *(g.mutable_black()) = playerFromRow(res, i, "black_name", "black_rating", "black_uuid");
+    }
+
+    return g;
+}
+
 Database::Database() {}
 
 Database::Database(const char *dbname, const char *user, const char *password, const char *host) :
@@ -184,15 +233,7 @@ std::vector<Game> Database::tournamentGames(const Identification *id) {
     PGresult *res = execute("tournament_games", 1, &values[0], &lengths[0], &formats[0], 1);
     std::vector<Game> vec(PQntuples(res));
     for(int i = 0; i < PQntuples(res); i++) {
-        vec[i] = Game();
-        vec[i].mutable_id()->set_uuid(PQgetvalue(res, i, PQfnumber(res, "uuid")), 16);
-        vec[i].set_round(get_int(res, i, "round"));
-        if(!PQgetisnull(res, i, PQfnumber(res, "result"))) {
-            vec[i].set_result(static_cast<Result>(get_int(res, i, "result")));
-        }
-        *(vec[i].mutable_white()) = playerFromRow(res, i, "white_name", "white_rating", "white_uuid");
-        if(!PQgetisnull(res, i, PQfnumber(res, "black_name")))
-            *(vec[i].mutable_black()) = playerFromRow(res, i, "black_name", "black_rating", "black_uuid");
+        vec[i] = gameFromRow(res, i);
     }
     PQclear(res);
     return vec;
@@ -235,15 +276,7 @@ std::vector<Game> Database::playerGames(const Identification *id) {
     PGresult *res = execute("player_games", 1, &values[0], &lengths[0], &formats[0], 1);
     std::vector<Game> vec(PQntuples(res));
     for(int i = 0; i < PQntuples(res); i++) {
-        vec[i] = Game();
-        vec[i].mutable_id()->set_uuid(PQgetvalue(res, i, PQfnumber(res, "uuid")), 16);
-        vec[i].set_round(get_int(res, i, "round"));
-        if(!PQgetisnull(res, i, PQfnumber(res, "result"))) {
-            vec[i].set_result(static_cast<Result>(get_int(res, i, "result")));
-        }
-        *(vec[i].mutable_white()) = playerFromRow(res, i, "white_name", "white_rating", "white_uuid");
-        if(!PQgetisnull(res, i, PQfnumber(res, "black_name")))
-            *(vec[i].mutable_black()) = playerFromRow(res, i, "black_name", "black_rating", "black_uuid");
+        vec[i] = gameFromRow(res, i);
     }
     return vec;
 }
@@ -270,10 +303,7 @@ bool Database::getGame(Game *g) {
     bool found = false;
     if(PQntuples(res) > 0) {
         found = true;
-        g->set_round(get_int(res, 0, "round"));
-        *(g->mutable_white()) = playerFromRow(res, 0, "white_name", "white_rating", "white_uuid");
-        if(!PQgetisnull(res, 0, PQfnumber(res, "black_name")))
-            *(g->mutable_black()) = playerFromRow(res, 0, "black_name", "black_rating", "black_uuid");
+        *g = gameFromRow(res, 0);
     }
     PQclear(res);
     return found;
@@ -360,33 +390,4 @@ PGresult *Database::execute(const char *stmt, int count, const char **values,
         throw DatabaseError(msgbuf);
     }
     return res;
-}
-
-Player Database::playerFromRow(PGresult *res, int i, const char *name_col,
-        const char *rating_col, const char *uuid_col, const char *withdrawn_col,
-        const char *expelled_col) {
-    Player p;
-    int fnum;
-
-    if((fnum = PQfnumber(res, uuid_col)) >= 0)
-        p.mutable_id()->set_uuid(PQgetvalue(res, i, fnum), 16);
-    else
-        throw DatabaseError("UUID column missing in row.");
-    if((fnum = PQfnumber(res, name_col)) >= 0)
-        p.set_name(PQgetvalue(res, i, fnum));
-    else
-        throw DatabaseError("Name column missing in row.");
-    if((fnum = PQfnumber(res, rating_col)) >= 0)
-        p.set_rating(intify(PQgetvalue(res, i, fnum)));
-    else
-        throw DatabaseError("Rating column missing in row.");
-
-    // Withdrawn and expelled are optional.
-    if((fnum = PQfnumber(res, withdrawn_col)) >= 0) {
-        p.set_withdrawn(intify(PQgetvalue(res, i, fnum)));
-    }
-    if((fnum = PQfnumber(res, expelled_col)) >= 0) {
-        p.set_expelled(intify(PQgetvalue(res, i, fnum)));
-    }
-    return p;
 }
