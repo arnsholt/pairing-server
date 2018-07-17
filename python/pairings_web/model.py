@@ -43,6 +43,9 @@ class Connection:
     def player_games(self, uuid, hmac=None):
         return self.models(self.stub.PlayerGames(self.ident(uuid, hmac)))
 
+    def game(self, uuid, hmac=None):
+        return self.model(self.stub.GetGame(self.ident(uuid, hmac)))
+
     def model(self, proto):
         return ModelObject.on(proto, self)
 

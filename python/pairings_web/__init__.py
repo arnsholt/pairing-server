@@ -38,3 +38,12 @@ def player(uuid, hmac=None):
         hmac = bytes.fromhex(hmac)
     return render_template('player.html',
             player=connection.player(uuid, hmac))
+
+@app.route('/game/<uuid>/')
+@app.route('/game/<uuid>/<hmac>/')
+def game(uuid, hmac=None):
+    uuid = bytes.fromhex(uuid)
+    if hmac is not None:
+        hmac = bytes.fromhex(hmac)
+    return render_template('game.html',
+            game=connection.game(uuid, hmac))
