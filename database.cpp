@@ -144,7 +144,7 @@ bool Database::getTournament(Tournament *t) {
 
     if(PQntuples(res) > 0) {
         found = true;
-        t->set_rounds(intify(PQgetvalue(res, 0, PQfnumber(res, "rounds"))));
+        t->set_rounds(get_int(res, 0, "rounds"));
         t->set_name(PQgetvalue(res, 0, PQfnumber(res, "name")));
     }
 
@@ -159,7 +159,7 @@ int Database::nextRound(const Identification *id) {
     PGresult *res = execute("next_round", 1, &values[0], &lengths[0], &formats[0], 1, 1, 1);
     int round = PQgetisnull(res, 0, PQfnumber(res, "round"))?
         1:
-        intify(PQgetvalue(res, 0, PQfnumber(res, "round")));
+        get_int(res, 0, "round");
     PQclear(res);
     return round;
 }
@@ -186,9 +186,9 @@ std::vector<Game> Database::tournamentGames(const Identification *id) {
     for(int i = 0; i < PQntuples(res); i++) {
         vec[i] = Game();
         vec[i].mutable_id()->set_uuid(PQgetvalue(res, i, PQfnumber(res, "uuid")), 16);
-        vec[i].set_round(intify(PQgetvalue(res, i, PQfnumber(res, "round"))));
+        vec[i].set_round(get_int(res, i, "round"));
         if(!PQgetisnull(res, i, PQfnumber(res, "result"))) {
-            vec[i].set_result(static_cast<Result>(intify(PQgetvalue(res, i, PQfnumber(res, "result")))));
+            vec[i].set_result(static_cast<Result>(get_int(res, i, "result")));
         }
         *(vec[i].mutable_white()) = playerFromRow(res, i, "white_name", "white_rating", "white_uuid");
         if(!PQgetisnull(res, i, PQfnumber(res, "black_name")))
@@ -221,7 +221,7 @@ bool Database::getPlayer(Player *p) {
         found = true;
         *p = playerFromRow(res, 0);
         p->mutable_tournament()->set_name(PQgetvalue(res, 0, PQfnumber(res, "tournament_name")));
-        p->mutable_tournament()->set_rounds(intify(PQgetvalue(res, 0, PQfnumber(res, "rounds"))));
+        p->mutable_tournament()->set_rounds(get_int(res, 0, "rounds"));
         p->mutable_tournament()->mutable_id()->set_uuid(PQgetvalue(res, 0, PQfnumber(res, "tournament_uuid")), 16);
     }
     PQclear(res);
@@ -237,9 +237,9 @@ std::vector<Game> Database::playerGames(const Identification *id) {
     for(int i = 0; i < PQntuples(res); i++) {
         vec[i] = Game();
         vec[i].mutable_id()->set_uuid(PQgetvalue(res, i, PQfnumber(res, "uuid")), 16);
-        vec[i].set_round(intify(PQgetvalue(res, i, PQfnumber(res, "round"))));
+        vec[i].set_round(get_int(res, i, "round"));
         if(!PQgetisnull(res, i, PQfnumber(res, "result"))) {
-            vec[i].set_result(static_cast<Result>(intify(PQgetvalue(res, i, PQfnumber(res, "result")))));
+            vec[i].set_result(static_cast<Result>(get_int(res, i, "result")));
         }
         *(vec[i].mutable_white()) = playerFromRow(res, i, "white_name", "white_rating", "white_uuid");
         if(!PQgetisnull(res, i, PQfnumber(res, "black_name")))
