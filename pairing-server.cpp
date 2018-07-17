@@ -183,7 +183,6 @@ class PairingServerImpl final : public PairingServer::Service {
 
         // Operations on players:
         Status GetPlayer(ServerContext *ctx, const Identification *req, Player *resp) override {
-            // TODO
             HANDLER_PROLOGUE
             IDENTIFIED(*req, "player");
             *(resp->mutable_id()) = *req;
