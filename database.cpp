@@ -27,23 +27,17 @@ void Database::connect() {
         throw e;
     }
 
+    // Operations on tournaments:
     prepare("get_tournament",
             "SELECT name, rounds FROM tournament WHERE uuid = $1", 1);
     prepare("next_round",
             "SELECT MAX(round) + 1 AS round\n"
             "FROM game INNER JOIN tournament t ON tournament = t.id\n"
             "WHERE t.uuid = $1", 1);
-    prepare("get_player",
-            "SELECT p.uuid AS uuid, player_name, rating, withdrawn, expelled,\n"
-            "   t.name AS tournament_name, t.uuid AS tournament_uuid, rounds\n"
-            "FROM player p INNER JOIN tournament t ON tournament = t.id\n"
-            "WHERE p.uuid = $1", 1);
     prepare("players",
             "SELECT player_name, rating, p.uuid AS uuid\n"
             "FROM player p INNER JOIN tournament t ON p.tournament = t.id\n"
             "WHERE t.uuid = $1", 1);
-    prepare("get_game",
-            "SELECT white, black, round, result FROM game WHERE uuid = $1", 1);
     prepare("games",
            "SELECT w.player_name AS white_name, w.rating AS white_rating, w.uuid AS white_uuid,\n"
            "       b.player_name AS black_name, b.rating AS black_rating, b.uuid AS black_uuid,\n"
@@ -55,10 +49,21 @@ void Database::connect() {
 
     prepare("insert_tournament",
             "INSERT INTO tournament(name, rounds) VALUES ($1, $2) RETURNING uuid", 2);
+
+    // Operations on players:
+    prepare("get_player",
+            "SELECT p.uuid AS uuid, player_name, rating, withdrawn, expelled,\n"
+            "   t.name AS tournament_name, t.uuid AS tournament_uuid, rounds\n"
+            "FROM player p INNER JOIN tournament t ON tournament = t.id\n"
+            "WHERE p.uuid = $1", 1);
     prepare("insert_player",
             "INSERT INTO player(player_name, rating, tournament)\n"
             "SELECT $1, $2, id FROM tournament WHERE uuid = $3\n"
             "RETURNING uuid", 3);
+
+    // Operations on games:
+    prepare("get_game",
+            "SELECT white, black, round, result FROM game WHERE uuid = $1", 1);
     prepare("insert_game",
             "INSERT INTO game(tournament, white, black, round)\n"
             "SELECT t.id, w.id, b.id, $4\n"
