@@ -7,8 +7,7 @@
         your <em>only</em> way of accessing it for writing, so don't lose it!
     </div>
     {%- endif %}
-    <p>Participating in
-    <a href="{{ player.tournament.link() }}">{{ player.tournament.name }}</a>.
+    <p>Participating in {{ player.tournament.link() }}.
     {%- if player.expelled %}
     Currently expelled from the tournament.
     {%- elif player.withdrawn %}
@@ -19,7 +18,7 @@
     {%- if games %}
     <ol>
         {%- for game in games %}
-        <li><a href="{{ game.link() }}">{{ game.description() }}</a></li>
+        <li>{{ game.link() }}</li>
         {%- endfor %}
     </ol>
     {%- else %}

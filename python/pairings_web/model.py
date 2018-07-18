@@ -1,6 +1,7 @@
 import grpc
 from google.protobuf.message import Message
 import itertools
+from markupsafe import Markup
 from operator import attrgetter
 
 import pairings_web.proto.types_pb2 as types
@@ -122,7 +123,8 @@ class DomainObject(ModelObject):
         raise NotImplementedError
 
     def link(self):
-        return "/%s/%s" % (self.link_prefix(), self.id.link_fragment())
+        return Markup('<a href="/%s/%s">%s</a>') % (self.link_prefix(),
+                self.id.link_fragment(), self.description())
 
 class Tournament (DomainObject):
     name = modelattribute("name")
@@ -146,6 +148,9 @@ class Tournament (DomainObject):
 
     def players(self):
         return self._connection.players(*self.id.id_pair())
+
+    def description(self):
+        return self.name
 
 class Player (DomainObject):
     name = modelattribute("name")
@@ -174,8 +179,12 @@ class Game (DomainObject):
     def link_prefix(): return "game"
 
     def description(self):
-        return "%s vs. %s" % (self.white.description(),
-                self.black.description() if self.has_black() else "Noone")
+        #return "%s vs. %s" % (self.white.description(),
+        #        self.black.description() if self.has_black() else "Noone")
+        if self.has_black():
+            return "%s vs. %s" % (self.white.description(), self.black.description())
+        else:
+            return "Not paired: %s" % self.white.description()
 
     def has_black(self):
         return self.has_field("black")

@@ -14,7 +14,7 @@
 {%- if players %}
     <ol>
     {%- for player in players %}
-        <li><a href="{{ player.link() }}">{{ player.description() }}</a></li>
+        <li>{{ player.link() }}</li>
     {%- endfor %}
     </ol>
 {%- else %}
@@ -27,7 +27,7 @@
     <h3>Round {{ round }}</h3>
     <ul>
         {%- for game in round_games %}
-        <li><a href="{{ game.link() }}">{{ game.description() }}</a></li>
+        <li>{{ game.link() }}</li>
         {%- endfor %}
     </ul>
     {%- endfor %}
