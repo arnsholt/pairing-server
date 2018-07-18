@@ -49,10 +49,14 @@ Game gameFromRow(PGresult *res, int i) {
         g.mutable_id()->set_uuid(PQgetvalue(res, i, fnum), 16);
     else
         throw DatabaseError("UUID column missing in row");
-    if((fnum = PQfnumber(res, "uuid")) >= 0)
-        g.set_round(get_int(res, i, "result"));
+    if((fnum = PQfnumber(res, "result")) >= 0)
+        g.set_result(static_cast<Result>(get_int(res, i, "result")));
     else
         throw DatabaseError("Result column missing in row");
+    if((fnum = PQfnumber(res, "round")) >= 0)
+        g.set_round(get_int(res, i, "round"));
+    else
+        throw DatabaseError("Round column missing in row");
     *(g.mutable_white()) = playerFromRow(res, i, "white_name", "white_rating", "white_uuid");
     if(!PQgetisnull(res, i, PQfnumber(res, "black_name"))) {
         *(g.mutable_black()) = playerFromRow(res, i, "black_name", "black_rating", "black_uuid");
