@@ -12,6 +12,27 @@ uint32_t get_int(PGresult *res, int i, const char *field) {
     return intify(PQgetvalue(res, i, PQfnumber(res, field)));
 }
 
+Tournament tournamentFromRow(PGresult *res, int i, const char *name_col = "name",
+        const char *rounds_col = "rounds", const char *uuid_col = "uuid") {
+    Tournament t;
+    int fnum;
+
+    if((fnum = PQfnumber(res, uuid_col)) >= 0)
+        t.mutable_id()->set_uuid(PQgetvalue(res, i, fnum), 16);
+    else
+        throw DatabaseError("UUID column missing in row");
+    if((fnum = PQfnumber(res, name_col)) >= 0)
+        t.set_name(PQgetvalue(res, i, fnum));
+    else
+        throw DatabaseError("Name column missing in row");
+    if((fnum = PQfnumber(res, rounds_col)) >= 0)
+        t.set_rounds(get_int(res, i, rounds_col));
+    else
+        throw DatabaseError("Rounds column missing in row");
+
+    return t;
+}
+
 Player playerFromRow(PGresult *res, int i, const char *name_col = "player_name",
         const char *rating_col = "rating", const char *uuid_col = "uuid",
         const char *withdrawn_col = "withdrawn", const char *expelled_col = "expelled") {
@@ -38,6 +59,12 @@ Player playerFromRow(PGresult *res, int i, const char *name_col = "player_name",
     if((fnum = PQfnumber(res, expelled_col)) >= 0) {
         p.set_expelled(intify(PQgetvalue(res, i, fnum)));
     }
+
+    // Tournament is optional:
+    if(PQfnumber(res, "tournament_name") >= 0) {
+        *(p.mutable_tournament()) = tournamentFromRow(res, i, "tournament_name", "rounds", "tournament_uuid");
+    }
+
     return p;
 }
 
@@ -264,9 +291,6 @@ bool Database::getPlayer(Player *p) {
     if(PQntuples(res) > 0) {
         found = true;
         *p = playerFromRow(res, 0);
-        p->mutable_tournament()->set_name(PQgetvalue(res, 0, PQfnumber(res, "tournament_name")));
-        p->mutable_tournament()->set_rounds(get_int(res, 0, "rounds"));
-        p->mutable_tournament()->mutable_id()->set_uuid(PQgetvalue(res, 0, PQfnumber(res, "tournament_uuid")), 16);
     }
     PQclear(res);
     return found;
