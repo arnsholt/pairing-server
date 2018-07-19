@@ -89,6 +89,8 @@ Game gameFromRow(PGresult *res, int i) {
         *(g.mutable_black()) = playerFromRow(res, i, "black_name", "black_rating", "black_uuid");
     }
 
+    *(g.mutable_tournament()) = g.white().tournament();
+
     return g;
 }
 
@@ -157,8 +159,10 @@ void Database::connect() {
     prepare("get_game",
            "SELECT w.player_name AS white_name, w.rating AS white_rating, w.uuid AS white_uuid,\n"
            "       b.player_name AS black_name, b.rating AS black_rating, b.uuid AS black_uuid,\n"
-           "       result, round, g.uuid AS uuid\n"
-           "FROM game g INNER JOIN player w ON white = w.id\n"
+           "       result, round, g.uuid AS uuid,\n"
+           "       rounds, t.name AS tournament_name, t.uuid AS tournament_uuid\n"
+           "FROM game g INNER JOIN tournament t ON tournament = t.id\n"
+           "            INNER JOIN player w ON white = w.id\n"
            "            LEFT  JOIN player b ON black = b.id\n"
            "WHERE g.uuid = $1", 1);
     prepare("insert_game",
