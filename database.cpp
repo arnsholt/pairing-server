@@ -33,10 +33,9 @@ Tournament tournamentFromRow(PGresult *res, int i, const char *name_col = "name"
     return t;
 }
 
-Player playerFromRow(PGresult *res, int i, const char *name_col = "player_name",
+void playerFromRow(Player &p, PGresult *res, int i, const char *name_col = "player_name",
         const char *rating_col = "rating", const char *uuid_col = "uuid",
         const char *withdrawn_col = "withdrawn", const char *expelled_col = "expelled") {
-    Player p;
     int fnum;
 
     if((fnum = PQfnumber(res, uuid_col)) >= 0)
@@ -64,8 +63,6 @@ Player playerFromRow(PGresult *res, int i, const char *name_col = "player_name",
     if(PQfnumber(res, "tournament_name") >= 0) {
         *(p.mutable_tournament()) = tournamentFromRow(res, i, "tournament_name", "rounds", "tournament_uuid");
     }
-
-    return p;
 }
 
 Game gameFromRow(PGresult *res, int i) {
@@ -84,9 +81,9 @@ Game gameFromRow(PGresult *res, int i) {
         g.set_round(get_int(res, i, "round"));
     else
         throw DatabaseError("Round column missing in row");
-    *(g.mutable_white()) = playerFromRow(res, i, "white_name", "white_rating", "white_uuid");
+    playerFromRow(*(g.mutable_white()), res, i, "white_name", "white_rating", "white_uuid");
     if(!PQgetisnull(res, i, PQfnumber(res, "black_name"))) {
-        *(g.mutable_black()) = playerFromRow(res, i, "black_name", "black_rating", "black_uuid");
+        playerFromRow(*(g.mutable_black()), res, i, "black_name", "black_rating", "black_uuid");
     }
 
     *(g.mutable_tournament()) = g.white().tournament();
@@ -254,7 +251,7 @@ std::vector<Player> Database::tournamentPlayers(const Identification *id) {
     PGresult *res = execute("players", 1, &values[0], &lengths[0], &formats[0], 1);
     std::vector<Player> vec(PQntuples(res));
     for(int i = 0; i < PQntuples(res); i++) {
-        vec[i] = playerFromRow(res, i);
+        playerFromRow(vec[i], res, i);
     }
     PQclear(res);
     return vec;
@@ -294,7 +291,7 @@ bool Database::getPlayer(Player *p) {
     bool found = false;
     if(PQntuples(res) > 0) {
         found = true;
-        *p = playerFromRow(res, 0);
+        playerFromRow(*p, res, 0);
     }
     PQclear(res);
     return found;
