@@ -94,12 +94,15 @@ class PairingServerImpl final : public PairingServer::Service {
         Status GetPlayers(ServerContext *ctx, const Identification *req, ServerWriter<Player> *writer) override {
             HANDLER_PROLOGUE
             IDENTIFIED(*req, "tournament");
+            bool correct_signature = authenticated(*req).error_code() == StatusCode::OK;
             for(Player &p: db().tournamentPlayers(req)) {
                 /* TODO: If the request is correctly signed, also sign the
                  * player objects returned, since someone with write access to
                  * the tournament transitively should have write access to
                  * player entries.
                  */
+                if(correct_signature)
+                    sign(*p.mutable_id());
                 writer->Write(p);
             }
             return Status::OK;
