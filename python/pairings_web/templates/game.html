@@ -1,0 +1,10 @@
+{% extends "layout/main.html" %}
+{%- block page_title %}{{ game.description() }}{%- endblock %}
+{% block content %}
+    <p>{%- if game.has_black() %}
+    Game between {{ game.white.link() }} and {{ game.black.link() }} in
+    {%- else %}
+    {{ game.white.link() }} was not paired for 
+    {%- endif %}
+    round {{ game.round }} of {{ game.tournament.link() }}.</p>
+{% endblock %}
