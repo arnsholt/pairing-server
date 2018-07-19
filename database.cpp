@@ -12,9 +12,8 @@ uint32_t get_int(PGresult *res, int i, const char *field) {
     return intify(PQgetvalue(res, i, PQfnumber(res, field)));
 }
 
-Tournament tournamentFromRow(PGresult *res, int i, const char *name_col = "name",
+void tournamentFromRow(Tournament &t, PGresult *res, int i, const char *name_col = "name",
         const char *rounds_col = "rounds", const char *uuid_col = "uuid") {
-    Tournament t;
     int fnum;
 
     if((fnum = PQfnumber(res, uuid_col)) >= 0)
@@ -29,8 +28,6 @@ Tournament tournamentFromRow(PGresult *res, int i, const char *name_col = "name"
         t.set_rounds(get_int(res, i, rounds_col));
     else
         throw DatabaseError("Rounds column missing in row");
-
-    return t;
 }
 
 void playerFromRow(Player &p, PGresult *res, int i, const char *name_col = "player_name",
@@ -61,12 +58,11 @@ void playerFromRow(Player &p, PGresult *res, int i, const char *name_col = "play
 
     // Tournament is optional:
     if(PQfnumber(res, "tournament_name") >= 0) {
-        *(p.mutable_tournament()) = tournamentFromRow(res, i, "tournament_name", "rounds", "tournament_uuid");
+        tournamentFromRow(*(p.mutable_tournament()), res, i, "tournament_name", "rounds", "tournament_uuid");
     }
 }
 
-Game gameFromRow(PGresult *res, int i) {
-    Game g;
+void gameFromRow(Game &g, PGresult *res, int i) {
     int fnum;
 
     if((fnum = PQfnumber(res, "uuid")) >= 0)
@@ -86,9 +82,8 @@ Game gameFromRow(PGresult *res, int i) {
         playerFromRow(*(g.mutable_black()), res, i, "black_name", "black_rating", "black_uuid");
     }
 
-    *(g.mutable_tournament()) = g.white().tournament();
-
-    return g;
+    if(g.white().has_tournament())
+        *(g.mutable_tournament()) = g.white().tournament();
 }
 
 Database::Database() {}
@@ -112,7 +107,7 @@ void Database::connect() {
 
     // Operations on tournaments:
     prepare("get_tournament",
-            "SELECT name, rounds FROM tournament WHERE uuid = $1", 1);
+            "SELECT uuid, name, rounds FROM tournament WHERE uuid = $1", 1);
     prepare("next_round",
             "SELECT MAX(round) + 1 AS round\n"
             "FROM game INNER JOIN tournament t ON tournament = t.id\n"
@@ -224,8 +219,7 @@ bool Database::getTournament(Tournament *t) {
 
     if(PQntuples(res) > 0) {
         found = true;
-        t->set_rounds(get_int(res, 0, "rounds"));
-        t->set_name(PQgetvalue(res, 0, PQfnumber(res, "name")));
+        tournamentFromRow(*t, res, 0);
     }
 
     PQclear(res);
@@ -264,7 +258,7 @@ std::vector<Game> Database::tournamentGames(const Identification *id) {
     PGresult *res = execute("tournament_games", 1, &values[0], &lengths[0], &formats[0], 1);
     std::vector<Game> vec(PQntuples(res));
     for(int i = 0; i < PQntuples(res); i++) {
-        vec[i] = gameFromRow(res, i);
+        gameFromRow(vec[i], res, i);
     }
     PQclear(res);
     return vec;
@@ -304,7 +298,7 @@ std::vector<Game> Database::playerGames(const Identification *id) {
     PGresult *res = execute("player_games", 1, &values[0], &lengths[0], &formats[0], 1);
     std::vector<Game> vec(PQntuples(res));
     for(int i = 0; i < PQntuples(res); i++) {
-        vec[i] = gameFromRow(res, i);
+        gameFromRow(vec[i], res, i);
     }
     return vec;
 }
@@ -331,7 +325,7 @@ bool Database::getGame(Game *g) {
     bool found = false;
     if(PQntuples(res) > 0) {
         found = true;
-        *g = gameFromRow(res, 0);
+        gameFromRow(*g, res, 0);
     }
     PQclear(res);
     return found;
