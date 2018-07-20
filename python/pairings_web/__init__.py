@@ -13,6 +13,7 @@ def index():
 
 @app.route('/tournament/', methods=['POST'])
 def tournament_post():
+    # TODO: Data validation (and reporting in the template)
     tournament = connection.new_tournament(request.form['name'],
         int(request.form['rounds']))
     return redirect(url_for('tournament', uuid=tournament.id.uuid.hex(),
