@@ -11,12 +11,12 @@ connection = model.Connection(address="localhost:1234")
 def index():
     return render_template('index.html', msg='Hello world!')
 
-@app.route('/tournament', methods=['POST'])
+@app.route('/tournament/', methods=['POST'])
 def tournament_post():
     tournament = connection.new_tournament(request.form['name'],
-        request.form['rounds'])
-    return redirect(url_for('tournament', uuid=tournament.uuid.hex(),
-        hmac=tournament.hmac.digest.hex()))
+        int(request.form['rounds']))
+    return redirect(url_for('tournament', uuid=tournament.id.uuid.hex(),
+        hmac=tournament.id.hmac.digest.hex()))
 
 @app.route('/tournament/<uuid>/')
 @app.route('/tournament/<uuid>/<hmac>/')
