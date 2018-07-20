@@ -9,6 +9,29 @@
     </div>
     {%- endif %}
     <p>Tournament played over {{ tournament.rounds }} rounds.</p>
+    <div class="card">
+        <div class="card-header">
+            <button class="btn btn-link" type="button" data-toggle="collapse"
+                data-target="#collapse">Sign up</button>
+        </div>
+        <div class="collapse" id="collapse">
+            <div class="card-body">
+                <form>
+                    <div class="row">
+                        <div class="form-group col-sm-8">
+                            <input type="text" class="form-control" name="name"
+                                placeholder="Player name">
+                        </div>
+                        <div class="form-group col-sm-4">
+                            <input type="number" class="form-control" name="rating"
+                                placeholder="Rating">
+                        </div>
+                    </div>
+                    <button type="submit" class="btn btn-primary">Sign up</button>
+                </form>
+            </div>
+        </div>
+    </div>
     <h2>Players</h2>
 {% set players = tournament.players() %}
 {%- if players %}
