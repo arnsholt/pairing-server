@@ -1,11 +1,8 @@
 from flask import Flask, redirect, render_template, request, url_for
 import grpc
 
-import pairings_web.model as model
+from . import model
 from .model import Tournament, Player, Game, Identification
-
-from .proto.types_pb2 import Tournament, Player, Game, Identification
-from .proto.service_pb2_grpc import PairingServerStub
 
 app = Flask(__name__)
 connection = model.Connection(address="localhost:1234")
@@ -47,3 +44,11 @@ def game(uuid, hmac=None):
         hmac = bytes.fromhex(hmac)
     return render_template('game.html',
             game=connection.game(uuid, hmac))
+
+@app.errorhandler(grpc.RpcError)
+def grpc_handler(e):
+    if e.code() == grpc.StatusCode.UNAVAILABLE:
+        return 'Backend service unavailable', 500
+    else:
+        # XXX: Output some more information here?
+        return 'Internal server error', 500
