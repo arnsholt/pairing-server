@@ -179,8 +179,6 @@ class Game (DomainObject):
     def link_prefix(): return "game"
 
     def description(self):
-        #return "%s vs. %s" % (self.white.description(),
-        #        self.black.description() if self.has_black() else "Noone")
         if self.has_black():
             return "%s vs. %s" % (self.white.description(), self.black.description())
         else:
