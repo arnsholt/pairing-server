@@ -25,8 +25,22 @@ def tournament(uuid, hmac=None):
     uuid = bytes.fromhex(uuid)
     if hmac is not None:
         hmac = bytes.fromhex(hmac)
+
     return render_template('tournament.html',
             tournament=connection.tournament(uuid, hmac))
+
+@app.route('/tournament/<uuid>/signup/')
+@app.route('/tournament/<uuid>/<hmac>/signup/')
+def signup(uuid, hmac=None):
+    uuid = bytes.fromhex(uuid)
+    if hmac is not None:
+        hmac = bytes.fromhex(hmac)
+
+    name = request.form['name']
+    rating = request.form['rating']
+
+    return redirect(url_for('player', uuid=player.id.uuid.hex(),
+        hmac=player.id.hmac.digest.hex()))
 
 @app.route('/player/<uuid>/')
 @app.route('/player/<uuid>/<hmac>/')
