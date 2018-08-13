@@ -1,0 +1,3 @@
+[submodule "bbpPairings"]
+	path = bbpPairings
+	url = https://github.com/arnsholt/bbpPairings.git

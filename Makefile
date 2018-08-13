@@ -2,7 +2,7 @@ CXXFLAGS=-g -Wall `pkg-config --cflags protobuf grpc`
 LDFLAGS=-lpq -lcrypto `pkg-config --libs protobuf grpc++` -lstdc++
 
 SRCS=pairing-server.cpp database.cpp
-OBJECTS=pairing-server.o database.o service.pb.o service.grpc.pb.o types.pb.o
+OBJECTS=bbpPairings/tournament/tournament.o pairing-server.o database.o service.pb.o service.grpc.pb.o types.pb.o
 
 pairing-server: $(OBJECTS)
 pairing-server.cpp: service.grpc.pb.cc
@@ -16,6 +16,10 @@ service.pb.cc: service.proto types.pb.cc
 
 clean:
 	rm -f pairing-server *.o *.pb.*
+
+# XXX: The dependency spec here might not be optimal.
+bbpPairings/%.o: bbpPairings
+	make -C bbpPairings
 
 # Magical code for automatically tracking dependencies of source files. Copied
 # in its entirety from
