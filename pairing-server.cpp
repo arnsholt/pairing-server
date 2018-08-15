@@ -7,6 +7,9 @@
 #include <openssl/hmac.h>
 #include <string>
 
+#include <swisssystems/common.h>
+#include <tournament/tournament.h>
+
 #include "database.h"
 #include "service.grpc.pb.h"
 
@@ -149,6 +152,15 @@ class PairingServerImpl final : public PairingServer::Service {
             if(t.rounds() < nextRound) {
                 return Status(StatusCode::INVALID_ARGUMENT, "Last round paired");
             }
+
+            tournament::Tournament bbpTournament;
+            bbpTournament.initialColor = tournament::COLOR_WHITE;
+            bbpTournament.expectedRounds = t.rounds();
+            bbpTournament.defaultAcceleration = false;
+
+            // TODO: Build tournament structure.
+            const swisssystems::Info &info = swisssystems::getInfo(swisssystems::DUTCH);
+            std::list<swisssystems::Pairing> pairs = info.computeMatching(std::move(bbpTournament), nullptr);
 
             g.mutable_tournament()->mutable_id()->set_uuid(req->uuid());
             g.set_round(nextRound);
